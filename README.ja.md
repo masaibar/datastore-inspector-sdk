@@ -1,6 +1,10 @@
-# DataStore Inspector SDK
+<p align="center">
+  <img src="docs/assets/datastore-inspector-icon.svg" alt="DataStore Inspector" width="144" height="144" />
+</p>
 
-[English](README.md) | 日本語
+<h1 align="center">DataStore Inspector SDK</h1>
+
+<p align="center"><a href="README.md">English</a> | 日本語</p>
 
 **実行中のAndroidアプリのSharedPreferencesとDataStoreを、Android Studioから確認し、その場で書き換える。** 状態を確かめるためだけのログ、一時的なデバッグ画面、再ビルドを減らします。
 
@@ -95,3 +99,7 @@ release APK／AABへInspector Runtime、Protocol、Provider、schema、instrumen
 Gradle Plugin、Protocol、Runtime module、sample codeを含むこのrepositoryのSDKは、[Apache License 2.0](LICENSE)で提供する。
 
 脆弱性を報告する場合は、[`SECURITY.ja.md`](SECURITY.ja.md)の非公開報告手順に従ってください。
+
+Android is a trademark of Google LLC.
+
+The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the [Creative Commons 3.0 Attribution License](https://creativecommons.org/licenses/by/3.0/).
