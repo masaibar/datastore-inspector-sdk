@@ -19,6 +19,10 @@ jobs:
     name: Quality gate
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      heavy_gates: ${{ steps.classify.outputs.heavy }}
+      classification_reason: ${{ steps.classify.outputs.reason }}
+      changed_count: ${{ steps.classify.outputs.changed_count }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -27,6 +31,51 @@ jobs:
       - name: whitespace・conflict markerを検出
         if: github.event_name == 'pull_request'
         run: git diff --check ${{ github.event.pull_request.base.sha }} HEAD
+      - name: CI変更分類を検証
+        run: ./scripts/test-classify-ci-changes.sh
+      - name: 重いrelease gateの要否を判定
+        id: classify
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PUSH_BASE_SHA: ${{ github.event.before }}
+          CURRENT_SHA: ${{ github.sha }}
+        run: |
+          classification_args=()
+
+          case "$EVENT_NAME" in
+            pull_request)
+              base_sha="$PR_BASE_SHA"
+              head_sha="$PR_HEAD_SHA"
+              ;;
+            push)
+              base_sha="$PUSH_BASE_SHA"
+              head_sha="$CURRENT_SHA"
+              ;;
+            *)
+              classification_args+=(--force-full)
+              ;;
+          esac
+
+          if [[ ${#classification_args[@]} -eq 0 ]]; then
+            if [[ -z "$base_sha" || "$base_sha" =~ ^0+$ ]] ||
+              ! git cat-file -e "${base_sha}^{commit}" 2>/dev/null ||
+              ! git cat-file -e "${head_sha}^{commit}" 2>/dev/null; then
+              classification_args+=(--force-full)
+            else
+              changed_paths_file="$RUNNER_TEMP/ci-changed-paths"
+              git diff --name-only -z "$base_sha" "$head_sha" > "$changed_paths_file"
+              while IFS= read -r -d '' changed_path; do
+                classification_args+=(--path "$changed_path")
+              done < "$changed_paths_file"
+            fi
+          fi
+
+          classification="$(./scripts/classify-ci-changes.sh "${classification_args[@]}")"
+          printf '%s\n' "$classification"
+          printf '%s\n' "$classification" >> "$GITHUB_OUTPUT"
 
   public-source:
     name: Public source gate
@@ -52,6 +101,8 @@ jobs:
 
   sdk:
     name: SDK release gate
+    needs: quality
+    if: needs.quality.outputs.heavy_gates == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -89,6 +140,8 @@ jobs:
 
   gradle-plugin:
     name: Gradle Plugin release gate
+    needs: quality
+    if: needs.quality.outputs.heavy_gates == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

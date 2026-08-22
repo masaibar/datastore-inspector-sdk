@@ -63,6 +63,10 @@ GitHubの`sdk-publication` environmentには次のsecretを登録する。
 
 secretの値はrepository file、Gradle property file、command line、logへ書かない。
 
+署名用secretを登録または更新したら、GitHub Actionsの`Validate Publication Signing`をpublic
+`main`から実行する。このworkflowは5つのMaven publicationについて署名ファイルを生成するが、
+Maven Centralへのuploadやreleaseは行わない。成功を確認してからrelease tagを作成する。
+
 ## ローカル検証
 
 JDK 21とAndroid SDK 36で実行する。
