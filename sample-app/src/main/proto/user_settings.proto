@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package datastore.inspector.sample;
+
+import "common/profile.proto";
+
+option java_multiple_files = true;
+option java_package = "com.masaibar.datastore.inspector.sample.proto";
+
+message UserSettings {
+  string user_name = 1;
+  int32 launch_count = 2;
+  int64 last_login_epoch_millis = 3;
+  bool premium = 4;
+  float rating = 5;
+  double balance = 6;
+  Theme theme = 7;
+  datastore.inspector.sample.common.Profile profile = 8;
+  repeated string enabled_features = 9;
+  map<string, bool> feature_flags = 10;
+  optional string nickname = 11;
+
+  oneof destination {
+    string screen_name = 12;
+    int64 content_id = 13;
+  }
+
+  bytes raw_value = 14;
+
+  message NotificationSettings {
+    bool enabled = 1;
+    repeated string channels = 2;
+  }
+
+  NotificationSettings notifications = 15;
+  uint32 uint32_value = 16;
+  uint64 uint64_value = 17;
+  sint32 sint32_value = 18;
+  sint64 sint64_value = 19;
+  fixed32 fixed32_value = 20;
+  fixed64 fixed64_value = 21;
+  sfixed32 sfixed32_value = 22;
+  sfixed64 sfixed64_value = 23;
+  repeated uint64 unsigned_ids = 24;
+  repeated NotificationSettings notification_profiles = 25;
+  map<uint32, uint64> unsigned_counters = 26;
+  map<string, NotificationSettings> notification_routes = 27;
+}
+
+enum Theme {
+  THEME_UNSPECIFIED = 0;
+  LIGHT = 1;
+  DARK = 2;
+}

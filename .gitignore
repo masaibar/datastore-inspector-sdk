@@ -1,0 +1,55 @@
+# IntelliJ IDEA
+.idea/
+
+# macOS
+.DS_Store
+
+# Claude Code (personal settings / machine-specific MCP config)
+.claude/settings.local.json
+.mcp.json
+
+# Secrets, credentials, and signing material
+.env
+.env.*
+!.env.example
+!.env.*.example
+.netrc
+.npmrc
+.pypirc
+credentials.json
+credentials.*.json
+service-account*.json
+google-services.json
+secrets.properties
+keystore.properties
+signing.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Claude Code generated local plans
+.claude/plans/
+.claude/requirements/
+
+# Logs
+firebase-debug.log
+
+# Generated review artifacts (view-interactive-plan)
+docs/*.html
+docs/*-comments.json
+
+*/firebase-debug.log
+
+# Gradle / local Android builds
+.gradle/
+**/.gradle/
+**/.kotlin/
+**/build/
+local.properties
+*.iml
+
+# Codexのmachine-specific接続設定
+.codex/

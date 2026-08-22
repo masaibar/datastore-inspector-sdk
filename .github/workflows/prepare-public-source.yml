@@ -1,0 +1,45 @@
+name: Prepare Public Source Candidate
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prepare-public-source
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Audit and archive tracked source
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: mainだけを候補にする
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "公開用source候補はmainからだけ生成できます。" >&2
+          exit 1
+      - name: tracked treeと履歴のsecretを検査
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: "false"
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+          GITLEAKS_VERSION: "8.29.1"
+      - name: tracked HEADだけから公開用archiveを生成
+        run: ./scripts/prepare-public-source.sh
+      - name: 公開用source候補を保存
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: datastore-inspector-sdk-public-source
+          path: |
+            build/public-source/datastore-inspector-sdk-public-source.tar.gz
+            build/public-source/datastore-inspector-sdk-public-source.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <provider
+            android:name="com.masaibar.datastore.inspector.runtime.core.DataStoreInspectorInitProvider"
+            android:authorities="${applicationId}.datastore_inspector_init;${applicationId}.datastore_inspector_runtime_v1"
+            android:exported="false"
+            android:initOrder="100" />
+    </application>
+</manifest>

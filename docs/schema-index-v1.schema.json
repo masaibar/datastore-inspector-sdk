@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/masaibar/datastore-inspector-sdk/blob/main/docs/schema-index-v1.schema.json",
+  "title": "DataStore Inspector schema index v1",
+  "description": "Contract for the protobuf-lite schema index embedded in debuggable variants.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formatVersion",
+    "entries"
+  ],
+  "properties": {
+    "formatVersion": {
+      "const": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generatedJvmClassName",
+        "rootMessageFullName",
+        "codeGenerationMode",
+        "descriptorDigestSha256",
+        "descriptorAssetPath"
+      ],
+      "properties": {
+        "generatedJvmClassName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Binary name compared with Class.getName(); nested classes use $ as the separator."
+        },
+        "rootMessageFullName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Fully qualified Proto message name in the descriptor bundle."
+        },
+        "codeGenerationMode": {
+          "const": "JAVA_LITE"
+        },
+        "descriptorDigestSha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "descriptorAssetPath": {
+          "type": "string",
+          "pattern": "^datastore-inspector/schemas/[0-9a-f]{64}\\.desc$",
+          "description": "Path relative to assets/; absolute paths and path traversal are forbidden."
+        }
+      }
+    }
+  }
+}

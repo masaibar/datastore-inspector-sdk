@@ -1,0 +1,59 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 2
+ij_continuation_indent_size = 2
+
+ij_kotlin_allow_trailing_comma_on_call_site = false
+ij_kotlin_allow_trailing_comma = false
+ij_kotlin_name_count_to_use_star_import = 99
+ij_kotlin_name_count_to_use_star_import_for_members = 99
+ij_kotlin_packages_to_use_import_on_demand = unset
+max_line_length = 140
+
+ktlint_standard_annotation = disabled
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_backing-property-naming = disabled
+ktlint_standard_blank-line-before-declaration = disabled
+ktlint_standard_blank-line-between-when-conditions = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_condition-wrapping = disabled
+ktlint_standard_enum-wrapping = disabled
+ktlint_standard_expression-operand-wrapping = disabled
+ktlint_standard_function-expression-body = disabled
+ktlint_standard_function-naming = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_kdoc = disabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_no-empty-first-line-in-class-body = disabled
+ktlint_standard_no-unused-imports = enabled
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_parameter-list-wrapping = disabled
+ktlint_standard_string-template-indent = disabled
+ktlint_standard_value-parameter-comment = disabled
+ktlint_standard_when-entry-bracing = disabled
+ktlint_standard_wrapping = enabled
+
+[*.{java,gradle}]
+indent_style = space
+indent_size = 4
+
+[*.{yml,yaml,json}]
+indent_style = space
+indent_size = 2
+
+[*.proto]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,0 +1,108 @@
+name: Publish SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: gradle/artifact-coordinates.propertiesと一致するrelease version
+        required: true
+        type: string
+      target:
+        description: 初回または通常releaseはall、部分失敗の再試行時だけ個別targetを選択
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - maven-central
+          - plugin-portal
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-sdk
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: sdk-publication
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: v${{ inputs.version }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: versionと一致するtagだけを許可
+        shell: bash
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          expected_tag="v${REQUESTED_VERSION}"
+          if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
+            echo "Publication workflowはpublic mainからだけ実行できます。" >&2
+            exit 1
+          fi
+          configured_version="$(sed -n 's/^version=//p' gradle/artifact-coordinates.properties)"
+          if [[ "$configured_version" != "$REQUESTED_VERSION" ]]; then
+            echo "入力versionとartifact座標の正本が一致しません。" >&2
+            exit 1
+          fi
+          if [[ "$configured_version" == *-SNAPSHOT ]]; then
+            echo "SNAPSHOT versionはrelease workflowから公開できません。" >&2
+            exit 1
+          fi
+          if [[ ! "$configured_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "release versionはSemVer形式で指定してください。" >&2
+            exit 1
+          fi
+          tag_commit="$(git rev-list -n 1 "$expected_tag")"
+          checked_out_commit="$(git rev-parse HEAD)"
+          if [[ "$tag_commit" != "$checked_out_commit" ]]; then
+            echo "選択したtagとcheckout commitが一致しません。" >&2
+            exit 1
+          fi
+      - name: 公開予定treeの境界を検証
+        run: ./scripts/verify-public-source.sh
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@40fd30fb8d7440372e1316f5d1809ec01dcd3699 # v4
+      - name: Android SDKを準備
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+        with:
+          cache-provider: basic
+      - name: SDK release gateを検証
+        run: ./gradlew checkSdk --console=plain
+      - name: Plugin Portal metadataを検証
+        if: inputs.target == 'all' || inputs.target == 'plugin-portal'
+        env:
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+        run: ./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain
+      - name: Maven Centralへpublishして自動release
+        if: inputs.target == 'all' || inputs.target == 'maven-central'
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        run: >-
+          ./gradlew publishAndReleaseToMavenCentral
+          -PmavenCentralPublishing=true
+          -PmavenCentralAutomaticPublishing=true
+          -PmavenCentralDeploymentValidation=PUBLISHED
+          -PsignAllPublications=true
+          --no-configuration-cache
+          --console=plain
+      - name: Gradle Plugin Portalへpublish
+        if: inputs.target == 'all' || inputs.target == 'plugin-portal'
+        env:
+          GRADLE_PUBLISH_KEY: ${{ secrets.GRADLE_PUBLISH_KEY }}
+          GRADLE_PUBLISH_SECRET: ${{ secrets.GRADLE_PUBLISH_SECRET }}
+        run: ./gradle-plugin/gradlew -p gradle-plugin publishPlugins --console=plain
