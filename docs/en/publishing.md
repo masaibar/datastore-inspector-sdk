@@ -66,6 +66,11 @@ Add these secrets to the GitHub `sdk-publication` environment:
 
 Never put secret values in repository files, Gradle property files, command lines, or logs.
 
+After adding or rotating the signing secrets, run `Validate Publication Signing` from the public
+`main` branch in GitHub Actions. The workflow generates signatures for all five Maven publications
+without uploading or releasing anything to Maven Central. Confirm that it succeeds before creating
+the release tag.
+
 ## Local verification
 
 Use JDK 21 and Android SDK 36.
