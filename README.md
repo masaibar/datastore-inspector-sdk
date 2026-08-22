@@ -1,6 +1,10 @@
-# DataStore Inspector SDK
+<p align="center">
+  <img src="docs/assets/datastore-inspector-icon.svg" alt="DataStore Inspector" width="144" height="144" />
+</p>
 
-English | [日本語](README.ja.md)
+<h1 align="center">DataStore Inspector SDK</h1>
+
+<p align="center">English | <a href="README.ja.md">日本語</a></p>
 
 **Inspect and update SharedPreferences and DataStore values in a running Android app—right from Android Studio.** Spend less time adding temporary logs, building throwaway debug screens, and rebuilding just to verify application state.
 
@@ -95,3 +99,7 @@ See the [publication guide](docs/en/publishing.md) for source-boundary auditing,
 The SDK, including the Gradle Plugin, Protocol, Runtime modules, and sample code in this repository, is licensed under the [Apache License 2.0](LICENSE).
 
 To report a vulnerability, follow the private reporting instructions in [`SECURITY.md`](SECURITY.md).
+
+Android is a trademark of Google LLC.
+
+The Android robot is reproduced or modified from work created and shared by Google and used according to terms described in the [Creative Commons 3.0 Attribution License](https://creativecommons.org/licenses/by/3.0/).
