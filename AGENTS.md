@@ -43,6 +43,24 @@ artifact、commit metadata、すべての Git 履歴は誰でも閲覧・複製�
 - [Must] ユーザーへ質問・確認する前に、判断材料、選択肢の比較、推奨と根拠を充分に提示する。
 - [Must] 質問文は「上記」などの参照に頼らず、単体で理解できる内容にする。
 
+## 公開成果物の言語
+
+このリポジトリは世界中の利用者と contributor が読む公開成果物です。実装・運用で検索可能な
+共通語を保ちつつ、日本語は翻訳や日本語固有の検証へ明示的に分離します。
+
+- [Must] source code の identifier、file name、comment、test name／message、非localizeの
+  error message、script／CI の step name と output は英語で書く。利用者が issue、log、source を
+  同じ語彙で検索でき、英語話者も障害調査と変更へ参加できるようにするためです。
+- [Must] repository に永続化する branch name、commit message、Issue／PR の title・description、
+  review comment は英語で書く。公開履歴だけを読んでも変更理由と議論を追えるようにするためです。
+- [Must] 利用者向け文字列は英語を既定値にし、日本語は localization resource へ分離する。
+  表示文字列を source code へ直接埋め込むと、locale の追加と翻訳の更新が困難になるためです。
+- [Must] 日本語そのものを検証する fixture／test data、固有名詞、日本固有仕様の入力値では、目的に
+  必要な範囲だけ日本語を使う。日本語が挙動の一部である case まで英訳すると検証対象が変わるためです。
+- [Must] `AGENTS.md` などの agent guidance と利用者向け文書は
+  [ルール・ドキュメントの記述ルール](.claude/rules/rule-authoring.md)に従う。日本語の正本と英語版を
+  対で管理する既存方針を、source code の英語規約で上書きしないためです。
+
 ## 所有範囲
 
 このリポジトリは、Android build に追加されるものと Android application process 内で
