@@ -33,6 +33,8 @@ jobs:
         run: git diff --check ${{ github.event.pull_request.base.sha }} HEAD
       - name: CI変更分類を検証
         run: ./scripts/test-classify-ci-changes.sh
+      - name: GitHub release処理を検証
+        run: ./scripts/test-ensure-github-release.sh
       - name: 重いrelease gateの要否を判定
         id: classify
         shell: bash
