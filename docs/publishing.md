@@ -82,8 +82,14 @@ JDK 21とAndroid SDK 36で実行する。
 - `protocol`のJARと4 RuntimeのAARを`build/publication-repository`へpublishする。
 - POM、Gradle Module Metadata、sources JAR、javadoc JARが揃っていることを確認する。
 - Gradle Plugin本体とplugin markerを同じlocal repositoryへpublishする。
+- Gradle Plugin／Runtimeのclass fileがJava 17、ProtocolがJava 11であり、Gradle Module Metadataが
+  それより新しいJVMを要求しないことを確認する。
 - 独立したAndroid consumerがPortalとMaven Centralの代わりにlocal repositoryだけを使い、
   Pluginを適用して公開対象5 artifactを解決する。
+
+CIとrelease workflowはこの後JDK 17へ切り替え、同じlocal publicationだけを使う独立consumerの
+debug／release APKをassembleする。Plugin適用と全artifactの解決に加え、release runtime classpathへ
+Inspectorが混入しないことも実JDK 17上で検証する。publish処理の前にはJDK 21へ戻す。
 
 ローカルrepositoryはcredentialを使わないため署名を検証しない。実際のMaven Central taskは
 Vanniktech pluginが必須checksumを生成し、release workflowが全publicationへのOpenPGP署名を有効にする。

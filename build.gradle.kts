@@ -5,15 +5,20 @@ import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import java.io.File
+import java.io.InputStream
 import java.util.Properties
+import java.util.zip.ZipFile
+import java.util.zip.ZipInputStream
 import javax.xml.parsers.DocumentBuilderFactory
 
 data class PublishedArtifactMetadata(
@@ -118,6 +123,173 @@ abstract class VerifyMavenPublicationRepository : DefaultTask() {
         "Gradle Module Metadataにproject依存が残っています: $pomFile"
       }
     }
+  }
+}
+
+abstract class VerifyPublishedJvmCompatibility : DefaultTask() {
+  @get:InputDirectory
+  abstract val repositoryDirectory: DirectoryProperty
+
+  @get:Input
+  abstract val groupId: Property<String>
+
+  @get:Input
+  abstract val publicationVersion: Property<String>
+
+  @get:Input
+  abstract val artifactExtensions: MapProperty<String, String>
+
+  @get:Input
+  abstract val expectedClassMajorVersions: MapProperty<String, Int>
+
+  @get:Input
+  abstract val requiredMetadataJvmVersions: MapProperty<String, Int>
+
+  @get:OutputFile
+  abstract val reportFile: RegularFileProperty
+
+  @TaskAction
+  fun verify() {
+    val groupPath = groupId.get().replace('.', '/')
+    val version = publicationVersion.get()
+    val reportLines = mutableListOf<String>()
+    artifactExtensions.get().forEach { (artifactId, extension) ->
+      val coordinateDirectory =
+        repositoryDirectory.get().asFile
+          .resolve(groupPath)
+          .resolve(artifactId)
+          .resolve(version)
+      val artifactFile = coordinateDirectory.resolve("$artifactId-$version.$extension")
+      check(artifactFile.isFile) { "JVM互換性を検証するartifactがありません: $artifactFile" }
+
+      val classMajorVersions = readClassMajorVersions(artifactFile, extension)
+      check(classMajorVersions.isNotEmpty()) {
+        "JVM互換性を検証できるclassがartifact内にありません: $artifactFile"
+      }
+      val expectedClassMajor = expectedClassMajorVersions.get().getValue(artifactId)
+      val actualClassMajors = classMajorVersions.toSortedSet()
+      check(actualClassMajors == setOf(expectedClassMajor)) {
+        "${artifactId}のclass file versionが期待値と一致しません。" +
+          "期待: $expectedClassMajor、実際: $actualClassMajors"
+      }
+
+      val moduleMetadataFile = coordinateDirectory.resolve("$artifactId-$version.module")
+      check(moduleMetadataFile.isFile) {
+        "Gradle Module Metadataがありません: $moduleMetadataFile"
+      }
+      val metadataJvmVersions =
+        JVM_VERSION_ATTRIBUTE_REGEX
+          .findAll(moduleMetadataFile.readText())
+          .map { match -> match.groupValues[1].toInt() }
+          .toSortedSet()
+      val maximumSupportedJvmVersion = classMajorToJavaVersion(expectedClassMajor)
+      check(metadataJvmVersions.none { it > maximumSupportedJvmVersion }) {
+        "${artifactId}のGradle Module Metadataが" +
+          "Java ${maximumSupportedJvmVersion}を超えています: " +
+          metadataJvmVersions
+      }
+      requiredMetadataJvmVersions.get()[artifactId]?.let { requiredJvmVersion ->
+        check(metadataJvmVersions == setOf(requiredJvmVersion)) {
+          "${artifactId}のGradle Module Metadata JVM versionが期待値と一致しません。" +
+            "期待: $requiredJvmVersion、実際: $metadataJvmVersions"
+        }
+      }
+
+      reportLines +=
+        "$artifactId: classMajor=$actualClassMajors, metadataJvm=$metadataJvmVersions"
+    }
+
+    val output = reportFile.get().asFile
+    output.parentFile.mkdirs()
+    output.writeText(reportLines.joinToString(separator = "\n", postfix = "\n"))
+    logger.lifecycle("公開artifactのJVM互換性検証に成功しました: $output")
+  }
+
+  private fun readClassMajorVersions(
+    artifactFile: File,
+    extension: String
+  ): List<Int> =
+    when (extension) {
+      "jar" -> readClassesFromZip(artifactFile)
+      "aar" -> readClassesFromAar(artifactFile)
+      else -> error("未対応のJVM artifact拡張子です: $extension")
+    }
+
+  private fun readClassesFromZip(artifactFile: File): List<Int> {
+    val versions = mutableListOf<Int>()
+    ZipFile(artifactFile).use { archive ->
+      val entries = archive.entries()
+      while (entries.hasMoreElements()) {
+        val entry = entries.nextElement()
+        if (!entry.isDirectory && entry.name.endsWith(".class")) {
+          archive.getInputStream(entry).use { input ->
+            versions += readClassMajorVersion(input, "$artifactFile!/${entry.name}")
+          }
+        }
+      }
+    }
+    return versions
+  }
+
+  private fun readClassesFromAar(artifactFile: File): List<Int> {
+    val versions = mutableListOf<Int>()
+    ZipFile(artifactFile).use { archive ->
+      val entries = archive.entries()
+      while (entries.hasMoreElements()) {
+        val entry = entries.nextElement()
+        if (entry.isDirectory) continue
+        when {
+          entry.name.endsWith(".class") ->
+            archive.getInputStream(entry).use { input ->
+              versions += readClassMajorVersion(input, "$artifactFile!/${entry.name}")
+            }
+          entry.name.endsWith(".jar") ->
+            ZipInputStream(archive.getInputStream(entry)).use { nestedArchive ->
+              var nestedEntry = nestedArchive.nextEntry
+              while (nestedEntry != null) {
+                if (!nestedEntry.isDirectory && nestedEntry.name.endsWith(".class")) {
+                  versions +=
+                    readClassMajorVersion(
+                      nestedArchive,
+                      "$artifactFile!/${entry.name}!/${nestedEntry.name}"
+                    )
+                }
+                nestedEntry = nestedArchive.nextEntry
+              }
+            }
+        }
+      }
+    }
+    return versions
+  }
+
+  private fun readClassMajorVersion(
+    input: InputStream,
+    source: String
+  ): Int {
+    val header = ByteArray(8)
+    var offset = 0
+    while (offset < header.size) {
+      val read = input.read(header, offset, header.size - offset)
+      check(read >= 0) { "class headerが途中で終了しました: $source" }
+      offset += read
+    }
+    check(
+      (header[0].toInt() and 0xFF) == 0xCA &&
+        (header[1].toInt() and 0xFF) == 0xFE &&
+        (header[2].toInt() and 0xFF) == 0xBA &&
+        (header[3].toInt() and 0xFF) == 0xBE
+    ) {
+      "class magicが不正です: $source"
+    }
+    return ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
+  }
+
+  private fun classMajorToJavaVersion(classMajor: Int): Int = classMajor - 44
+
+  companion object {
+    private val JVM_VERSION_ATTRIBUTE_REGEX =
+      Regex("""\"org\.gradle\.jvm\.version\"\s*:\s*(\d+)""")
   }
 }
 
@@ -319,6 +491,37 @@ val publishGradlePluginToPublicationVerificationRepository =
   gradle.includedBuild("gradle-plugin")
     .task(":publishAllPublicationsToPublicationVerificationRepository")
 
+val verifyPublishedJvmCompatibility =
+  tasks.register<VerifyPublishedJvmCompatibility>("verifyPublishedJvmCompatibility") {
+    group = "verification"
+    description = "公開対象JAR／AARとGradle Module MetadataのJVM互換性を検証します。"
+    dependsOn(
+      publishSdkToPublicationVerificationRepository,
+      publishGradlePluginToPublicationVerificationRepository
+    )
+    repositoryDirectory.set(publicationRepositoryDirectory)
+    groupId.set(artifactCoordinate("group"))
+    publicationVersion.set(artifactCoordinate("version"))
+    artifactExtensions.set(
+      publishedArtifacts.values.associate { metadata ->
+        artifactCoordinate(metadata.artifactProperty) to metadata.extension
+      } + (artifactCoordinate("gradlePluginArtifact") to "jar")
+    )
+    expectedClassMajorVersions.set(
+      publishedArtifacts.values.associate { metadata ->
+        artifactCoordinate(metadata.artifactProperty) to
+          if (metadata.artifactProperty == "protocolArtifact") 55 else 61
+      } + (artifactCoordinate("gradlePluginArtifact") to 61)
+    )
+    requiredMetadataJvmVersions.set(
+      mapOf(
+        artifactCoordinate("protocolArtifact") to 11,
+        artifactCoordinate("gradlePluginArtifact") to 17
+      )
+    )
+    reportFile.set(layout.buildDirectory.file("reports/publication-jvm-compatibility.txt"))
+  }
+
 val verifyPublishedSdkConsumer =
   tasks.register<Exec>("verifyPublishedSdkConsumer") {
     group = "verification"
@@ -349,7 +552,11 @@ val checkPublications =
   tasks.register("checkPublications") {
     group = "verification"
     description = "Maven Central／Plugin Portal向けpublicationをローカル検証します。"
-    dependsOn(verifyPublishedSdkMetadata, verifyPublishedSdkConsumer)
+    dependsOn(
+      verifyPublishedSdkMetadata,
+      verifyPublishedJvmCompatibility,
+      verifyPublishedSdkConsumer
+    )
   }
 
 tasks.register("checkSdk") {

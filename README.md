@@ -61,7 +61,9 @@ Build and run a debuggable variant, then select the application from DataStore I
 
 ## Build
 
-JDK 21 and Android SDK 36 are required.
+Building this repository from source requires JDK 21 and Android SDK 36. Published Gradle Plugin
+and Runtime artifacts target Java 17, so consumer builds do not need to move their Gradle JVM to
+JDK 21.
 
 ```shell
 ./gradlew checkSdk --console=plain

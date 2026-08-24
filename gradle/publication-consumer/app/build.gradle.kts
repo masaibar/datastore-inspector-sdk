@@ -25,8 +25,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_21
-        targetCompatibility = JavaVersion.VERSION_21
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
@@ -74,4 +74,43 @@ androidComponents {
             }
         }
     }
+
+    onVariants(selector().withBuildType("release")) { variant ->
+        tasks.register("verifyPublishedReleaseClasspath") {
+            group = "verification"
+            description = "release runtime classpathにDataStore Inspectorが入らないことを検証します。"
+            doLast {
+                val resolvedComponents =
+                    variant.runtimeConfiguration
+                        .incoming
+                        .resolutionResult
+                        .allComponents
+                        .map { component -> component.id.displayName }
+                        .toSet()
+                val leakedComponents =
+                    resolvedComponents.filter { resolved ->
+                        resolved.startsWith("$publicationGroup:")
+                    }
+                check(leakedComponents.isEmpty()) {
+                    "release runtime classpathへ公開SDK artifactが混入しています: " +
+                        leakedComponents.sorted()
+                }
+                logger.lifecycle("公開済みGradle Pluginのrelease分離検証に成功しました。")
+            }
+        }
+    }
+}
+
+tasks.register("verifyJdk17Consumer") {
+    group = "verification"
+    description = "JDK 17で公開artifactを使う独立consumerをassemble・検証します。"
+    check(JavaVersion.current() == JavaVersion.VERSION_17) {
+        "verifyJdk17ConsumerはJDK 17で実行してください。現在: ${JavaVersion.current()}"
+    }
+    dependsOn(
+        "assembleDebug",
+        "assembleRelease",
+        "verifyPublishedRuntimeClasspath",
+        "verifyPublishedReleaseClasspath",
+    )
 }

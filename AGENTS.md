@@ -78,8 +78,9 @@ adapter、inspection client と共有する transport Protocol、利用者向け
 
 ## 検証
 
-JDK 21 と Android SDK 36 を使用します。SDK 全体と、独立 build である Gradle Plugin の
-両方を検証します。
+source buildにはJDK 21とAndroid SDK 36を使用します。SDK全体と、独立buildであるGradle Pluginの
+両方を検証します。例外として`gradle/publication-consumer`の互換性gateだけはJDK 17で実行し、
+公開artifactがconsumerのGradle JVMをJDK 21へ引き上げないことを保証します。
 
 ```shell
 ./gradlew checkSdk --console=plain

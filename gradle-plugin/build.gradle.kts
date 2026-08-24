@@ -1,5 +1,7 @@
+import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.util.Properties
 
 plugins {
@@ -67,9 +69,17 @@ base {
 
 kotlin {
   jvmToolchain(21)
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_17)
+    freeCompilerArgs.add("-Xjdk-release=17")
+  }
   sourceSets.named("main") {
     kotlin.srcDir(generatedCoordinatesDirectory)
   }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+  options.release.set(17)
 }
 
 tasks.named("compileKotlin") {
