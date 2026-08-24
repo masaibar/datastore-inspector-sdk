@@ -37,16 +37,63 @@ This repository contains the application-side SDK added to consumer debug builds
 
 ## Quick start
 
-Apply the Plugin to the Android application module. It adds the matching Runtime components only to supported debuggable variants; do not add Runtime artifacts manually.
+The Plugin belongs only in an Android application module. It injects the matching Runtime components into supported debuggable variants, so do not add Runtime artifacts manually.
+
+### Install with an AI coding agent
+
+Copy this prompt into your coding agent from the Android project you want to configure:
+
+```text
+Add DataStore Inspector SDK version 0.2.0 to this Android project.
+
+- Inspect the existing Gradle structure and conventions first. If the project uses a Version Catalog, add the Plugin version and alias there; otherwise follow the existing Plugin declaration style.
+- Apply the com.masaibar.datastore-inspector Plugin only to the Android application module. If the target module is ambiguous, ask me before editing.
+- Use exactly version 0.2.0. Do not guess a latest or nonexistent version.
+- Do not add Runtime artifacts manually. The Plugin injects them only into supported debuggable variants and must leave release variants untouched.
+- Add gradlePluginPortal() to pluginManagement.repositories only if it is missing.
+- Do not change the Gradle JDK, AGP, Kotlin, Gradle Wrapper, compileSdk, minSdk, or targetSdk.
+- Do not guess Proto DataStore schema mappings. If one is needed, ask me for the generated message class and fully qualified Proto message name.
+- Do not update unrelated dependencies, reformat unrelated files, or refactor unrelated code.
+- Verify with the smallest debug build for the target application module, then report the changed files and result.
+```
+
+### Manual setup with Version Catalog
+
+Add the version and Plugin alias to `gradle/libs.versions.toml`:
+
+```toml
+[versions]
+datastore-inspector = "0.2.0"
+
+[plugins]
+datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
+```
+
+Apply the alias in the Android application module:
 
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "<sdk-version>"
+  alias(libs.plugins.datastore.inspector)
 }
 ```
 
-Preferences DataStore and persisted SharedPreferences are discovered without additional Inspector configuration. For Proto DataStore, register the generated message class and its fully qualified schema name:
+### Manual setup without Version Catalog
+
+Apply the Plugin directly in the Android application module:
+
+```kotlin
+plugins {
+  id("com.android.application")
+  id("com.masaibar.datastore-inspector") version "0.2.0"
+}
+```
+
+Both manual routes resolve the Plugin through the Gradle Plugin Portal. Most Android projects already include `gradlePluginPortal()` in `pluginManagement.repositories`; add it only if it is missing.
+
+### Proto DataStore schema
+
+Preferences DataStore and persisted SharedPreferences are discovered without additional Inspector configuration. Only when using Proto DataStore, register the generated message class and its fully qualified Proto message name:
 
 ```kotlin
 dataStoreInspector {

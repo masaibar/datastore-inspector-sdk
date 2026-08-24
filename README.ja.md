@@ -37,16 +37,63 @@ Storeのkey、value、schemaを外部サーバーへ送信しません。通信�
 
 ## クイックスタート
 
-Android application moduleへPluginを適用します。対応するdebuggable variantだけへ必要なRuntimeが自動追加されるため、Runtime artifactを手動で依存へ追加する必要はありません。
+Pluginを適用するのはAndroid application moduleだけです。対応するdebuggable variantへ必要なRuntimeが自動追加されるため、Runtime artifactを手動で依存へ追加しないでください。
+
+### AI coding agentで導入する
+
+設定したいAndroid projectを開いた状態で、次のpromptをcoding agentへそのまま渡します。
+
+```text
+このAndroid projectへDataStore Inspector SDK version 0.2.0を導入してください。
+
+- 最初に既存のGradle構成と規約を確認してください。Version Catalogを使っている場合はPluginのversionとaliasをそこへ追加し、使っていない場合は既存のPlugin指定方法に合わせてください。
+- com.masaibar.datastore-inspector PluginはAndroid application moduleだけへ適用してください。対象moduleを一意に判断できない場合は、編集前に私へ確認してください。
+- versionは必ず0.2.0へ固定し、latestや存在しないversionを推測しないでください。
+- Runtime artifactを手動で依存へ追加しないでください。Pluginが対応するdebuggable variantだけへ自動注入し、release variantは変更しないでください。
+- pluginManagement.repositoriesにgradlePluginPortal()が無い場合だけ追加してください。
+- Gradle JDK、AGP、Kotlin、Gradle Wrapper、compileSdk、minSdk、targetSdkを変更しないでください。
+- Proto DataStoreのschema mappingを推測しないでください。必要な場合は、generated message classと完全修飾Proto message名を私へ確認してください。
+- 無関係なdependency更新、format変更、refactorを行わないでください。
+- 対象application moduleの最小debug buildで検証し、変更ファイルと結果を報告してください。
+```
+
+### Version Catalogで手動設定する
+
+`gradle/libs.versions.toml`へversionとPlugin aliasを追加します。
+
+```toml
+[versions]
+datastore-inspector = "0.2.0"
+
+[plugins]
+datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
+```
+
+Android application moduleでaliasを適用します。
 
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "<sdk-version>"
+  alias(libs.plugins.datastore.inspector)
 }
 ```
 
-Preferences DataStoreと永続化済みSharedPreferencesは、Inspector固有の追加設定なしで検出されます。Proto DataStoreでは、生成されるmessage classとschema上の完全修飾名を登録します。
+### Version Catalogを使わず手動設定する
+
+Android application moduleでPluginを直接指定します。
+
+```kotlin
+plugins {
+  id("com.android.application")
+  id("com.masaibar.datastore-inspector") version "0.2.0"
+}
+```
+
+どちらの手動設定もGradle Plugin PortalからPluginを解決します。通常のAndroid projectでは`pluginManagement.repositories`に`gradlePluginPortal()`が既にあります。無い場合だけ追加してください。
+
+### Proto DataStoreのschema
+
+Preferences DataStoreと永続化済みSharedPreferencesは、Inspector固有の追加設定なしで検出されます。Proto DataStoreを使う場合だけ、生成されるmessage classと完全修飾Proto message名を登録します。
 
 ```kotlin
 dataStoreInspector {
