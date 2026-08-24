@@ -6,7 +6,9 @@ English | [日本語](../compatibility.md)
 
 - Android Studio Panda 4 Patch 1 (`AI-253.32098.37.2534.15336583`)
 - Android Studio Quail 2 (`AI-261.25134.95.2612.15822958`)
-- JDK 21, Gradle 9.6.1, and AGP 9.2.1
+- JDK 17 for a consumer's Gradle JVM, and JDK 21 for SDK source builds and releases
+- Java 17 bytecode for the published Gradle Plugin and Runtime, and Java 11 bytecode for Protocol
+- Gradle 9.6.1 and AGP 9.2.1 as the validated reference toolchain
 - Runtime AAR and consumer-app manifests using `minSdk` 23, with a verification sample using
   `compileSdk` and `targetSdk` 36
 - Inspector connectivity and operation on Android 9 (API 28) or later

@@ -121,6 +121,22 @@ jobs:
           cache-provider: basic
       - name: Runtime、sample、APK／AAB分離を検証
         run: ./gradlew checkSdk --console=plain
+      - name: JDK 17を準備
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: 公開artifactをJDK 17 consumerで検証
+        shell: bash
+        run: |
+          publication_group="$(sed -n 's/^group=//p' gradle/artifact-coordinates.properties)"
+          publication_version="$(sed -n 's/^version=//p' gradle/artifact-coordinates.properties)"
+          ./gradlew -p gradle/publication-consumer clean verifyJdk17Consumer \
+            -PpublicationRepository="$GITHUB_WORKSPACE/build/publication-repository" \
+            -PpublicationGroup="$publication_group" \
+            -PpublicationVersion="$publication_version" \
+            --no-configuration-cache \
+            --console=plain
       - name: 検証記録を保存
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

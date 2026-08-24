@@ -86,8 +86,15 @@ Use JDK 21 and Android SDK 36.
 - The Protocol JAR and four Runtime AARs are published to `build/publication-repository`.
 - Each publication includes a POM, Gradle Module Metadata, sources JAR, and javadoc JAR.
 - The Gradle Plugin implementation and plugin marker are published to the same local repository.
+- Gradle Plugin and Runtime class files target Java 17, Protocol targets Java 11, and Gradle Module
+  Metadata does not require a newer JVM than the corresponding artifact.
 - An independent Android consumer uses only the local repository in place of the Portal and Maven
   Central, applies the Plugin, and resolves all five public SDK artifacts.
+
+CI and the release workflow then switch to JDK 17 and assemble debug and release APKs for an
+independent consumer using only those local publications. This proves Plugin application, all
+artifact resolution, and release runtime-classpath isolation on an actual JDK 17. The release
+workflow switches back to JDK 21 before publishing.
 
 The local repository does not use credentials, so it does not prove signing. For a real Maven
 Central upload, the Vanniktech plugin generates the required checksums and the release workflow

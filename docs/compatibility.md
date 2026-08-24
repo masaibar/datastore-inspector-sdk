@@ -6,7 +6,9 @@
 
 - Android Studio Panda 4 Patch 1（`AI-253.32098.37.2534.15336583`）
 - Android Studio Quail 2（`AI-261.25134.95.2612.15822958`）
-- JDK 21、Gradle 9.6.1、AGP 9.2.1
+- consumerのGradle JVMはJDK 17、SDKのsource build／releaseはJDK 21
+- 公開Gradle Plugin／Runtimeのbytecode targetはJava 17、ProtocolはJava 11
+- 検証基準のGradle 9.6.1、AGP 9.2.1
 - Runtime AAR／consumer appのmanifest minSdk 23、compileSdk／targetSdk 36の検証sample
 - Inspectorの接続・動作保証端末はAndroid 9（API 28）以上
 - AndroidX DataStore 1.2.1

@@ -61,7 +61,8 @@ debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorか
 
 ## ビルド
 
-JDK 21とAndroid SDK 36が必要です。
+このrepositoryをsourceからbuildするにはJDK 21とAndroid SDK 36が必要です。公開するGradle Pluginと
+Runtime artifactはJava 17をtargetとするため、consumer buildのGradle JVMをJDK 21へ上げる必要はありません。
 
 ```shell
 ./gradlew checkSdk --console=plain
