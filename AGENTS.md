@@ -48,15 +48,20 @@ artifact、commit metadata、すべての Git 履歴は誰でも閲覧・複製�
 このリポジトリは世界中の利用者と contributor が読む公開成果物です。実装・運用で検索可能な
 共通語を保ちつつ、日本語は翻訳や日本語固有の検証へ明示的に分離します。
 
-- [Must] source code の identifier、file name、comment、test name／message、非localizeの
+- [Must] 新規に追加または変更する source code の identifier、file name、comment、test name／message、非localizeの
   error message、script／CI の step name と output は英語で書く。利用者が issue、log、source を
   同じ語彙で検索でき、英語話者も障害調査と変更へ参加できるようにするためです。
 - [Must] repository に永続化する branch name、commit message、Issue／PR の title・description、
   review comment は英語で書く。公開履歴だけを読んでも変更理由と議論を追えるようにするためです。
-- [Must] 利用者向け文字列は英語を既定値にし、日本語は localization resource へ分離する。
+- [Must] 新規に追加または変更する利用者向け文字列は英語を既定値にし、日本語は localization
+  resource へ分離する。
   表示文字列を source code へ直接埋め込むと、locale の追加と翻訳の更新が困難になるためです。
 - [Must] 日本語そのものを検証する fixture／test data、固有名詞、日本固有仕様の入力値では、目的に
   必要な範囲だけ日本語を使う。日本語が挙動の一部である case まで英訳すると検証対象が変わるためです。
+- [Must] 既存の日本語 comment、test name、script／CI output は、その箇所を変更するときに意味を
+  保って英語へ移行する。既存資産を段階的に揃え、無関係な差分を増やさないためです。
+- [Never] 既存資産の一括英語化を、無関係な feature／fix と同じ PR に混ぜない。bulk migration が
+  必要なら独立した PR にし、意味変更と機械的翻訳を分離して review できるようにするためです。
 - [Must] `AGENTS.md` などの agent guidance と利用者向け文書は
   [ルール・ドキュメントの記述ルール](.claude/rules/rule-authoring.md)に従う。日本語の正本と英語版を
   対で管理する既存方針を、source code の英語規約で上書きしないためです。
