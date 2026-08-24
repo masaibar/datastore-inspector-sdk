@@ -1,0 +1,48 @@
+name: Create SDK Release
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Release ${{ github.event.pull_request.head.ref }}
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'release/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+      - name: release branchからtagとGitHub Releaseを作成
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          RELEASE_COMMIT: ${{ github.event.pull_request.merge_commit_sha }}
+        run: |
+          release_version="${RELEASE_BRANCH#release/}"
+          if [[ "$RELEASE_BRANCH" != "release/${release_version}" ]]; then
+            echo "release branchはrelease/<version>形式で指定してください。" >&2
+            exit 1
+          fi
+          ./scripts/ensure-github-release.sh \
+            --version "$release_version" \
+            --commit "$RELEASE_COMMIT" \
+            --repository "$GITHUB_REPOSITORY"

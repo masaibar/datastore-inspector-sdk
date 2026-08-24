@@ -65,7 +65,8 @@ secretの値はrepository file、Gradle property file、command line、logへ書
 
 署名用secretを登録または更新したら、GitHub Actionsの`Validate Publication Signing`をpublic
 `main`から実行する。このworkflowは5つのMaven publicationについて署名ファイルを生成するが、
-Maven Centralへのuploadやreleaseは行わない。成功を確認してからrelease tagを作成する。
+Maven Centralへのuploadやreleaseは行わない。成功を確認してからrelease PRをmergeするか、
+`Publish SDK`を実行する。
 
 ## ローカル検証
 
@@ -105,21 +106,25 @@ shasum -a 256 -c \
 
 ## release手順
 
-1. `gradle/artifact-coordinates.properties`の`version`を、未公開かつ`-SNAPSHOT`でない値へ更新する。
-2. pull requestでCIと公開metadataを確認する。非SNAPSHOTのrelease候補では、必要に応じて
+1. `release/<version>` branchで`gradle/artifact-coordinates.properties`の`version`を、未公開かつ
+   `-SNAPSHOT`でない値へ更新する。
+2. public `main`向けのpull requestでCIと公開metadataを確認する。非SNAPSHOTのrelease候補では、必要に応じて
    有効なPlugin Portal credentialを環境変数へ設定してから
    `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`も実行する。
-3. 変更をpublic `main`へmergeする。
-4. merge commitへ`v<version>`のannotated tagを作成してpushする。tagger metadataにも公開を許可した
-   identityを使い、同じversionのtagを別commitへ付け替えない。
-5. GitHub Actionsの`Publish SDK`をpublic `main`から実行し、正本と同じ`version`、target `all`を
-   指定する。workflowは公開対象を`v<version>` tagへcheckoutする。
-6. Maven CentralとGradle Plugin Portalで同じversionの公開を確認する。
+3. pull requestをpublic `main`へmergeする。`Create SDK Release` workflowがPR eventのbranch情報と
+   merge commitを検証し、`v<version>`のannotated tagとGitHub Releaseを自動作成する。
+4. GitHub Actionsの`Publish SDK`をpublic `main`から手動実行し、正本と同じ`version`、target `all`を
+   指定する。workflowは公開対象を`v<version>` tagへcheckoutしてからrelease gateとpublishを行う。
+5. Maven CentralとGradle Plugin Portalで同じversionの公開を確認する。
 
-workflowはpublic `main`からだけ起動でき、入力versionと正本の一致、非SNAPSHOT、checkoutしたcommitと
-`v<version>` tagの一致をpublish前に検証する。Maven Centralはvalidation完了まで待って自動releaseし、
-その後Gradle Plugin Portalへpublishする。workflow定義の修正はmainから取り込める一方、公開するsourceは
-tagへ固定されるため、部分失敗の再試行も同じimmutable commitから行える。
+自動releaseは、同じrepositoryの`release/<SemVer>` branchからpublic `main`へmergeされたPRだけを対象にする。
+merge commit messageを解析しないため、GitHub上のmerge方式には依存しない。入力versionと正本、非SNAPSHOT、
+tagとcommitの一致を検証し、既存tagが別commitを指す場合は上書きせず失敗する。
+
+初回導入時など、version更新が既に`main`へmerge済みでrelease PRが存在しない場合は、`Publish SDK`を直接実行
+できる。指定tagがなければ、workflowを実行した`main` commitへannotated tagとGitHub Releaseを自動作成する。
+既存tagがあればそのimmutable commitを再利用するため、`main`が先へ進んだ後の部分再試行でも公開sourceは
+変わらない。Maven Centralはvalidation完了まで待って自動releaseし、その後Gradle Plugin Portalへpublishする。
 
 片方だけが失敗した場合は、成功済みtargetへ同じversionを再publishしない。workflowのtargetを
 `maven-central`または`plugin-portal`へ絞り、同じtagを入力して失敗側だけを再試行する。公開済みartifactは
