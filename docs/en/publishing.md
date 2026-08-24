@@ -69,7 +69,7 @@ Never put secret values in repository files, Gradle property files, command line
 After adding or rotating the signing secrets, run `Validate Publication Signing` from the public
 `main` branch in GitHub Actions. The workflow generates signatures for all five Maven publications
 without uploading or releasing anything to Maven Central. Confirm that it succeeds before creating
-the release tag.
+a release by merging a release pull request or running `Publish SDK`.
 
 ## Local verification
 
@@ -111,23 +111,30 @@ shasum -a 256 -c \
 
 ## Release procedure
 
-1. Change `version` in `gradle/artifact-coordinates.properties` to an unpublished value that does
-   not end in `-SNAPSHOT`.
-2. Review CI and publication metadata in a pull request. For a non-SNAPSHOT release candidate,
+1. On a `release/<version>` branch, change `version` in `gradle/artifact-coordinates.properties` to
+   an unpublished value that does not end in `-SNAPSHOT`.
+2. Review CI and publication metadata in a pull request targeting the public `main`. For a
+   non-SNAPSHOT release candidate,
    optionally provide valid Plugin Portal credentials through environment variables and run
    `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`.
-3. Merge the change into the public `main` branch.
-4. Create and push an annotated `v<version>` tag for the merge commit. Use an approved public
-   identity for tagger metadata, and never move that version tag to another commit.
-5. Run `Publish SDK` from the public `main`, using the same `version` and target `all`. The workflow
-   checks out the `v<version>` tag as the source to publish.
-6. Confirm that the same version is available from Maven Central and the Gradle Plugin Portal.
+3. Merge the pull request into public `main`. The `Create SDK Release` workflow validates the branch
+   metadata and merge commit from the pull request event, then creates an annotated `v<version>` tag
+   and a GitHub Release.
+4. Manually run `Publish SDK` from public `main`, using the same `version` and target `all`. The
+   workflow checks out `v<version>` before running the release gates and publishing.
+5. Confirm that the same version is available from Maven Central and the Gradle Plugin Portal.
 
-The workflow can start only from public `main`. Before uploading, it verifies that the input matches
-the source-of-truth version, the version is not a SNAPSHOT, and the checked-out commit matches the
-`v<version>` tag. A workflow fix can therefore come from `main` while the published source stays
-fixed to the immutable tag. Maven Central is validated and released first, followed by the Gradle
-Plugin Portal.
+Automatic releases apply only to merged pull requests from a `release/<SemVer>` branch in the same
+repository to public `main`. The workflow uses pull request event metadata instead of parsing the
+merge commit message, so it does not depend on the GitHub merge method. It verifies the input against
+the source-of-truth version, rejects SNAPSHOT versions, and refuses to move an existing tag that
+points to another commit.
+
+For a bootstrap release where the version has already reached `main` without a release pull request,
+run `Publish SDK` directly. If the requested tag is absent, the workflow creates an annotated tag and
+a GitHub Release for the selected `main` commit. If the tag already exists, the workflow reuses that
+immutable commit, so a partial retry continues to publish the same source even after `main` advances.
+Maven Central is validated and released first, followed by the Gradle Plugin Portal.
 
 If only one target fails, do not republish the same version to the successful target. Rerun the
 workflow with the same tag input and target `maven-central` or `plugin-portal` for only the failed side.
