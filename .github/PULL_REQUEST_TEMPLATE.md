@@ -1,13 +1,13 @@
-## What changed
+## やったこと
 
-## Why
+## やった理由
 
-## Trade-offs and out of scope
+## 妥協したこと・やっていないこと
 
-## Verification
+## 確認項目
 
-- [ ] Verified that ...
+- [ ] XXをしたとき、YYすること
 
-## Screenshots
+## スクリーンショット
 
 <img src="" width="300" />

@@ -31,7 +31,8 @@
 このリポジトリは世界中の利用者と contributor が読む公開成果物です。実装・運用で検索可能な共通語を保ちつつ、日本語は翻訳や日本語固有の検証へ明示的に分離します。
 
 - [Must] 新規に追加または変更する source code の identifier、file name、comment、test name／message、非localizeの error message、script／CI の step name と output は英語で書く。利用者が issue、log、source を同じ語彙で検索でき、英語話者も障害調査と変更へ参加できるようにするためです。
-- [Must] repository に永続化する branch name、commit message、Issue／PR の title・description、review comment は英語で書く。公開履歴だけを読んでも変更理由と議論を追えるようにするためです。
+- [Must] repository に永続化する branch name と commit message は英語で書く。source code と同じ語彙で変更を検索できるようにするためです。
+- [Must] PR の title と description は日本語で書き、identifier、command、file path など原表記が意味を持つ技術用語は英語のまま扱う。maintainer が変更理由と判断材料を自然に確認でき、翻訳で技術上の意味を変えないためです。
 - [Must] 新規に追加または変更する利用者向け文字列は英語を既定値にし、日本語は localization resource へ分離する。表示文字列を source code へ直接埋め込むと、locale の追加と翻訳の更新が困難になるためです。
 - [Must] 日本語そのものを検証する fixture／test data、固有名詞、日本固有仕様の入力値では、目的に必要な範囲だけ日本語を使う。日本語が挙動の一部である case まで英訳すると検証対象が変わるためです。
 - [Must] 既存の日本語 comment、test name、script／CI output は、その箇所を変更するときに意味を保って英語へ移行する。既存資産を段階的に揃え、無関係な差分を増やさないためです。
@@ -63,6 +64,19 @@ source buildにはJDK 21とAndroid SDK 36を使用します。SDK全体と、独
 ```shell
 ./gradlew checkSdk --console=plain
 ./gradle-plugin/gradlew -p gradle-plugin clean checkPlugin --console=plain
+```
+
+上記のJDK 21検証を完了したあと、`JAVA_HOME`をJDK 17へ切り替え、同じlocal publicationのdebug／release artifactをconsumerから検証します。
+
+```shell
+publication_group="$(sed -n 's/^group=//p' gradle/artifact-coordinates.properties)"
+publication_version="$(sed -n 's/^version=//p' gradle/artifact-coordinates.properties)"
+JAVA_HOME="/path/to/jdk-17" ./gradlew -p gradle/publication-consumer clean verifyJdk17Consumer \
+  -PpublicationRepository="$PWD/build/publication-repository" \
+  -PpublicationGroup="$publication_group" \
+  -PpublicationVersion="$publication_version" \
+  --no-configuration-cache \
+  --console=plain
 ```
 
 - [Must] integration build／test が失敗したら、親 agent が全 error を確認して root cause と所有範囲を特定してから修正を委任する。近接ファイルの作者へ機械的に戻すと、横断的な原因を誤診するためです。
