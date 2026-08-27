@@ -8,7 +8,7 @@
 
 **実行中のAndroidアプリのSharedPreferencesとDataStoreを、Android Studioから確認・編集します。** 状態確認のための一時的なログ、デバッグ画面、再ビルドを減らします。
 
-[Stetho](https://facebook.github.io/stetho/)や[Flipper](https://github.com/facebook/flipper)が提供した「実行中のアプリを覗く」体験を、SharedPreferencesとJetpack DataStore向けに引き継ぎます。
+DataStore Inspectorは、今はなき[Stetho](https://facebook.github.io/stetho/)や[Flipper](https://github.com/facebook/flipper)が提供してくれていた、実行中のアプリの値を確認・更新できるという素晴らしい開発者体験を、SharedPreferencesとJetpack DataStore向けに取り戻したいという思いから生まれました。
 
 - Preferences DataStoreと永続化済みSharedPreferencesを自動検出
 - Preferences、SharedPreferences、登録したProto DataStoreを一覧・検索・編集

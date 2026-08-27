@@ -8,7 +8,7 @@
 
 **Inspect and edit SharedPreferences and DataStore values in a running Android app from Android Studio.** Reduce temporary logs, throwaway debug screens, and rebuilds used only to inspect state.
 
-DataStore Inspector brings the "inspect a running app" workflow pioneered by [Stetho](https://facebook.github.io/stetho/) and [Flipper](https://github.com/facebook/flipper) to SharedPreferences and Jetpack DataStore.
+DataStore Inspector was born from a desire to bring back the excellent developer experience once offered by [Stetho](https://facebook.github.io/stetho/) and [Flipper](https://github.com/facebook/flipper): inspecting and updating values in a running app, now for SharedPreferences and Jetpack DataStore.
 
 - Automatically discover Preferences DataStore and persisted SharedPreferences
 - Browse, search, and edit Preferences, SharedPreferences, and registered Proto DataStore instances
