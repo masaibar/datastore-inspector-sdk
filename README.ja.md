@@ -44,11 +44,11 @@ Pluginを適用するのはAndroid application moduleだけです。対応する
 設定したいAndroid projectを開いた状態で、次のpromptをcoding agentへそのまま渡します。
 
 ```text
-このAndroid projectへDataStore Inspector SDK version 0.2.0を導入してください。
+このAndroid projectへDataStore Inspector SDKの最新stable releaseを導入してください。
 
 - 最初に既存のGradle構成と規約を確認してください。Version Catalogを使っている場合はPluginのversionとaliasをそこへ追加し、使っていない場合は既存のPlugin指定方法に合わせてください。
 - com.masaibar.datastore-inspector PluginはAndroid application moduleだけへ適用してください。対象moduleを一意に判断できない場合は、編集前に私へ確認してください。
-- versionは必ず0.2.0へ固定し、latestや存在しないversionを推測しないでください。
+- https://github.com/masaibar/datastore-inspector-sdk/releases でdraftでもprereleaseでもない最新versionを特定し、同じversionが https://plugins.gradle.org/plugin/com.masaibar.datastore-inspector とMaven Centralの`com.masaibar.datastore-inspector`の両方で公開済みであることを確認して、そのexact versionへ固定してください。情報が一致しない、または確認できない場合は、推測やdynamic version selectorを使わず私へ確認してください。
 - Runtime artifactを手動で依存へ追加しないでください。Pluginが対応するdebuggable variantだけへ自動注入し、release variantは変更しないでください。
 - pluginManagement.repositoriesにgradlePluginPortal()が無い場合だけ追加してください。
 - Gradle JDK、AGP、Kotlin、Gradle Wrapper、compileSdk、minSdk、targetSdkを変更しないでください。
@@ -63,7 +63,7 @@ Pluginを適用するのはAndroid application moduleだけです。対応する
 
 ```toml
 [versions]
-datastore-inspector = "0.2.0"
+datastore-inspector = "1.0.0"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
@@ -85,7 +85,7 @@ Android application moduleでPluginを直接指定します。
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "0.2.0"
+  id("com.masaibar.datastore-inspector") version "1.0.0"
 }
 ```
 

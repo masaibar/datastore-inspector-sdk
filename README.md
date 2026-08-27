@@ -44,11 +44,11 @@ The Plugin belongs only in an Android application module. It injects the matchin
 Copy this prompt into your coding agent from the Android project you want to configure:
 
 ```text
-Add DataStore Inspector SDK version 0.2.0 to this Android project.
+Add the latest stable DataStore Inspector SDK release to this Android project.
 
 - Inspect the existing Gradle structure and conventions first. If the project uses a Version Catalog, add the Plugin version and alias there; otherwise follow the existing Plugin declaration style.
 - Apply the com.masaibar.datastore-inspector Plugin only to the Android application module. If the target module is ambiguous, ask me before editing.
-- Use exactly version 0.2.0. Do not guess a latest or nonexistent version.
+- Find the newest non-draft, non-prerelease version on https://github.com/masaibar/datastore-inspector-sdk/releases, then verify that the exact same version is available from both https://plugins.gradle.org/plugin/com.masaibar.datastore-inspector and Maven Central under `com.masaibar.datastore-inspector`. Pin that exact version. If the sources disagree or cannot be verified, stop and ask me instead of guessing or using a dynamic version selector.
 - Do not add Runtime artifacts manually. The Plugin injects them only into supported debuggable variants and must leave release variants untouched.
 - Add gradlePluginPortal() to pluginManagement.repositories only if it is missing.
 - Do not change the Gradle JDK, AGP, Kotlin, Gradle Wrapper, compileSdk, minSdk, or targetSdk.
@@ -63,7 +63,7 @@ Add the version and Plugin alias to `gradle/libs.versions.toml`:
 
 ```toml
 [versions]
-datastore-inspector = "0.2.0"
+datastore-inspector = "1.0.0"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
@@ -85,7 +85,7 @@ Apply the Plugin directly in the Android application module:
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "0.2.0"
+  id("com.masaibar.datastore-inspector") version "1.0.0"
 }
 ```
 
