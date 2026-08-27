@@ -6,70 +6,43 @@
 
 <p align="center"><a href="README.md">English</a> | 日本語</p>
 
-**実行中のAndroidアプリのSharedPreferencesとDataStoreを、Android Studioから確認し、その場で書き換える。** 状態を確かめるためだけのログ、一時的なデバッグ画面、再ビルドを減らします。
+**実行中のAndroidアプリのSharedPreferencesとDataStoreを、Android Studioから確認・編集します。** 状態確認のための一時的なログ、デバッグ画面、再ビルドを減らします。
 
-かつて[Stetho](https://facebook.github.io/stetho/)や[Flipper](https://github.com/facebook/flipper)がもたらした「実行中のアプリ内部を手元で覗く」体験は、Android開発を大きく楽にしてくれました。両プロジェクトがアーカイブされた今も、SharedPreferencesやJetpack DataStoreの値を確認するためにログを足し、状態を変えるために一時的なコードを書いてbuildし直す、という手間は残っています。DataStore Inspectorは、このフィードバックループを短くするために作りました。
+DataStore Inspectorは、今はなき[Stetho](https://facebook.github.io/stetho/)や[Flipper](https://github.com/facebook/flipper)が提供してくれていた、実行中のアプリの値を確認・更新できるという素晴らしい開発者体験を、SharedPreferencesとJetpack DataStore向けに取り戻したいという思いから生まれました。
 
-このSDKをAndroidアプリへ導入し、Android StudioのDataStore Inspector Pluginから接続すると、Live Modeで次のことができます。
+- Preferences DataStoreと永続化済みSharedPreferencesを自動検出
+- Preferences、SharedPreferences、登録したProto DataStoreを一覧・検索・編集
+- Storeの変更を追跡し、アプリが使うinstanceを公式API経由で更新
 
-- Preferences DataStoreと永続化済みSharedPreferencesを追加設定なしで検出する
-- 登録したProto DataStoreを含むStoreを一覧・検索し、現在の値を確認する
-- 対応する値を実行中のアプリへ書き戻し、Storeの変化を追跡する
-- アプリが実際に使っているinstanceと公式APIを経由し、DataStoreのtransactionを迂回しない
+SDKは対応するdebuggable variantだけへ追加され、release variantは変更しません。Storeのkey、value、schemaを外部サーバーへ送信せず、internet通信、telemetry、Android network permissionも追加しません。端末との通信はADB forwardを通した認証済みローカル接続に限定します。
 
-SDKが追加されるのは対応するdebuggable variantだけです。release variantは変更しません。
+## 導入
 
-Storeのkey、value、schemaを外部サーバーへ送信しません。通信は端末とローカルのAndroid Studio間で、ADB forwardを通した認証済みローカル接続に限定します。SDKはinternet通信、telemetry、Android network permissionを追加しません。
+### AI coding agentを使う
 
-このSDKをオープンソースで公開するのは、アプリへ組み込まれるコードを利用者自身が確認できる状態にするためです。debug buildへ何を追加し、アプリprocess内で何が動き、どのようにStoreへアクセスし、release buildへ何を残さないのかを隠さず公開することで、「自分のアプリへ導入してよいか」を判断できる透明性を担保します。
-
-このリポジトリには、利用者のdebug buildへ追加され、アプリprocess内で動作するSDKを置きます。Android Studio上のUIとinspection clientはIDE Pluginが提供します。
-
-## モジュール
-
-- `gradle-plugin`: debuggable variantへの依存追加、schema生成、ASM instrumentation
-- `protocol`: Android Runtimeとinspection clientが共有するversioned Protocol
-- `runtime-core`: Registry、接続、認証、競合制御
-- `runtime-preferences`: Preferences DataStore adapter
-- `runtime-shared-preferences`: 永続化済みSharedPreferencesの動的catalogと標準6型adapter
-- `runtime-protobuf`: Proto DataStore adapter
-- `sample-app`: Preferences、SharedPreferences、Protoの基本設定を示し、debug専用注入とrelease非混入を検証する最小consumer
-
-## クイックスタート
-
-Pluginを適用するのはAndroid application moduleだけです。対応するdebuggable variantへ必要なRuntimeが自動追加されるため、Runtime artifactを手動で依存へ追加しないでください。
-
-### AI coding agentで導入する
-
-設定したいAndroid projectを開いた状態で、次のpromptをcoding agentへそのまま渡します。
+Android projectを開き、次のpromptをcoding agentへ渡します。
 
 ```text
-このAndroid projectへDataStore Inspector SDK version 0.2.0を導入してください。
+このAndroid projectへDataStore Inspector SDKの最新stable releaseを導入してください。
 
-- 最初に既存のGradle構成と規約を確認してください。Version Catalogを使っている場合はPluginのversionとaliasをそこへ追加し、使っていない場合は既存のPlugin指定方法に合わせてください。
-- com.masaibar.datastore-inspector PluginはAndroid application moduleだけへ適用してください。対象moduleを一意に判断できない場合は、編集前に私へ確認してください。
-- versionは必ず0.2.0へ固定し、latestや存在しないversionを推測しないでください。
-- Runtime artifactを手動で依存へ追加しないでください。Pluginが対応するdebuggable variantだけへ自動注入し、release variantは変更しないでください。
-- pluginManagement.repositoriesにgradlePluginPortal()が無い場合だけ追加してください。
-- Gradle JDK、AGP、Kotlin、Gradle Wrapper、compileSdk、minSdk、targetSdkを変更しないでください。
-- Proto DataStoreのschema mappingを推測しないでください。必要な場合は、generated message classと完全修飾Proto message名を私へ確認してください。
-- 無関係なdependency更新、format変更、refactorを行わないでください。
-- 対象application moduleの最小debug buildで検証し、変更ファイルと結果を報告してください。
+- GitHub Releasesでdraft／prereleaseではない最新versionを探し、同じversionがGradle Plugin PortalとMaven Centralで公開済みであることを確認してexact versionへ固定してください。確認できなければ推測せず私へ質問してください。
+- 既存のGradle構成に合わせ、com.masaibar.datastore-inspector PluginをAndroid application moduleだけへ適用してください。
+- Runtime artifactを手動追加せず、Gradle／AGP／Kotlin／Android SDKのversionや無関係なファイルを変更しないでください。
+- Proto schema mappingが必要なら、generated message classと完全修飾Proto message名を推測せず私へ確認してください。
+- 対象moduleの最小debug buildで検証し、変更ファイルと結果を報告してください。
 ```
 
-### Version Catalogで手動設定する
+### 手動で設定する
 
-`gradle/libs.versions.toml`へversionとPlugin aliasを追加します。
+Version Catalogを使う場合:
 
 ```toml
 [versions]
-datastore-inspector = "0.2.0"
+datastore-inspector = "1.0.0"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
 ```
-
-Android application moduleでaliasを適用します。
 
 ```kotlin
 plugins {
@@ -78,22 +51,20 @@ plugins {
 }
 ```
 
-### Version Catalogを使わず手動設定する
-
-Android application moduleでPluginを直接指定します。
+Version Catalogを使わない場合:
 
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "0.2.0"
+  id("com.masaibar.datastore-inspector") version "1.0.0"
 }
 ```
 
-どちらの手動設定もGradle Plugin PortalからPluginを解決します。通常のAndroid projectでは`pluginManagement.repositories`に`gradlePluginPortal()`が既にあります。無い場合だけ追加してください。
+PluginはAndroid application moduleだけへ適用してください。必要なRuntimeは対応するdebuggable variantへ自動追加されます。
 
-### Proto DataStoreのschema
+### Proto DataStore
 
-Preferences DataStoreと永続化済みSharedPreferencesは、Inspector固有の追加設定なしで検出されます。Proto DataStoreを使う場合だけ、生成されるmessage classと完全修飾Proto message名を登録します。
+Proto DataStoreを使う場合だけ、generated message classと完全修飾Proto message名を登録します。
 
 ```kotlin
 dataStoreInspector {
@@ -104,49 +75,18 @@ dataStoreInspector {
 }
 ```
 
-debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorから対象applicationを選びます。non-debuggable variantは変更されません。実行可能なPreferences、SharedPreferences、Protoの例は[`sample-app`](sample-app)を参照してください。
+debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorからapplicationを選びます。実行例は[`sample-app`](sample-app)を参照してください。
 
-## ビルド
-
-このrepositoryをsourceからbuildするにはJDK 21とAndroid SDK 36が必要です。公開するGradle Pluginと
-Runtime artifactはJava 17をtargetとするため、consumer buildのGradle JVMをJDK 21へ上げる必要はありません。
-
-```shell
-./gradlew checkSdk --console=plain
-./gradle-plugin/gradlew -p gradle-plugin clean checkPlugin --console=plain
-```
-
-release APK／AABへInspector Runtime、Protocol、Provider、schema、instrumentation hookが混入しないことも`checkSdk`で検証します。
-
-## 配布
-
-- Maven Central: `protocol`、`runtime-core`、`runtime-preferences`、`runtime-shared-preferences`、`runtime-protobuf`
-- Gradle Plugin Portal: `com.masaibar.datastore-inspector`
-
-公開前のlocal consumer検証、public repositoryの初期設定、credential、release手順は[`docs/publishing.md`](docs/publishing.md)を参照してください。
-
-## namespace
-
-- Kotlin／Java package: `com.masaibar.datastore.inspector.*`
-- Maven group: `com.masaibar.datastore-inspector`
-- Gradle Plugin ID: `com.masaibar.datastore-inspector`
-
-座標とversionの正本は[`gradle/artifact-coordinates.properties`](gradle/artifact-coordinates.properties)です。
-
-## ドキュメント
+## 詳細
 
 - [対応範囲と既知制限](docs/compatibility.md)
-- [SDKアーキテクチャ](docs/architecture.md)
 - [Gradle Pluginが変更する内容](docs/what-is-injected.md)
 - [Custom DataStoreの検査](docs/custom-datastore.md)
-- [セキュリティ](docs/security.md)
-- [プライバシー](docs/privacy.md)
+- [セキュリティ](docs/security.md)／[プライバシー](docs/privacy.md)
 
 ## ライセンス
 
-Gradle Plugin、Protocol、Runtime module、sample codeを含むこのrepositoryのSDKは、[Apache License 2.0](LICENSE)で提供する。
-
-脆弱性を報告する場合は、[`SECURITY.ja.md`](SECURITY.ja.md)の非公開報告手順に従ってください。
+[Apache License 2.0](LICENSE)。脆弱性は[`SECURITY.ja.md`](SECURITY.ja.md)の手順で非公開報告してください。
 
 Android is a trademark of Google LLC.
 
