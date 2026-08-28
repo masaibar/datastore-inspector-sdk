@@ -19,9 +19,13 @@ reviews:
     drafts: false
     auto_incremental_review: true
     auto_pause_after_reviewed_commits: 5
+    base_branches:
+      - "main"
+      - "release/.*"
     ignore_title_keywords:
       - "WIP"
       - "DO NOT MERGE"
+      # Use only for release/* -> main synchronization PRs already reviewed on the release branch.
       - "[skip review]"
 
 chat:
