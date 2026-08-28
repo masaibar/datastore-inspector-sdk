@@ -7,6 +7,8 @@ Protocol 1.2では、Proto／Preferences以外のtyped DataStoreを、実Seriali
 inspection clientへ送ったり、型や暗号化形式を推測したりはしません。設定なしで安全なprojectionを解決できない
 Storeは、固定reason code付きのUnsupportedになります。
 
+Custom DataStore APIは[Experimental](api-stability.md)です。codecとGradle設定の両方で明示的なopt-inが必要です。
+
 ## projectionの優先順位
 
 Runtimeはsnapshotごとに次の順で候補を検証します。成功候補が複数ある場合はformatとcanonical
@@ -43,10 +45,11 @@ auto projection成功時にも候補としてprobeし、formatとcanonical docum
 constructorを持たせます。
 
 ```kotlin
+@OptIn(ExperimentalDataStoreInspectorApi::class)
 public class SettingsCodec : InspectorCustomCodec<Settings> {
     override val codecId: String = "settings"
     override val schemaVersion: Int = 1
-    override val format: CustomDocumentFormat = CustomDocumentFormat.JSON
+    override val format: InspectorCustomDocumentFormat = InspectorCustomDocumentFormat.JSON
 
     override fun encode(value: Settings): String =
         """{"label":${Json.encodeToString(value.label)}}"""
@@ -66,6 +69,7 @@ application moduleのGradle設定では、Serializer、value、codecのexact JVM
 bindingします。
 
 ```kotlin
+@OptIn(ExperimentalDataStoreInspectorGradleApi::class)
 dataStoreInspector {
     customCodecBinding(
         "com.example.SettingsSerializer",
@@ -102,10 +106,7 @@ AndroidX、Kotlin、kotlinx、Inspector自身は除外し、対応表にないow
 作成がproducerを呼んだ時だけbasenameを観測します。Proto `MessageLite`のSerializerはwrapせず、
 従来のProto adapterへ渡します。
 
-対応作成経路を通らず実Serializerを捕捉できないCustom Storeは
-`CUSTOM_CREATION_ROUTE_UNSUPPORTED`または`CUSTOM_SERIALIZER_CAPTURE_UNAVAILABLE`です。
-`registerFallback`は利用者が保持する同じinstanceの登録手段ですが、捕捉できなかった
-Serializer契約を推測可能にするものではありません。
+対応作成経路を通らず実Serializerを捕捉できないCustom Storeは`CUSTOM_CREATION_ROUTE_UNSUPPORTED`または`CUSTOM_SERIALIZER_CAPTURE_UNAVAILABLE`です。`registerDataStoreInspectorFallback`は利用者が保持する同じinstanceの登録手段ですが、捕捉できなかったSerializer契約を推測可能にするものではありません。
 
 ## 書込みとtimeoutの境界
 

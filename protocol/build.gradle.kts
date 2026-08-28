@@ -12,6 +12,7 @@ kotlin {
 
   compilerOptions {
     jvmTarget.set(JvmTarget.JVM_11)
+    optIn.add("com.masaibar.datastore.inspector.protocol.InternalDataStoreInspectorProtocolApi")
   }
 }
 

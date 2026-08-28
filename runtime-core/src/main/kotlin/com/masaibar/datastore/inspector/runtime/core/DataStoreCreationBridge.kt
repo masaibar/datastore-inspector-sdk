@@ -28,6 +28,7 @@ import java.io.File
  *
  * produceFile / producePathはAndroidXへそのまま渡し、表示名取得のために追加実行しません。
  */
+@InternalDataStoreInspectorApi
 public object DataStoreCreationBridge {
   @JvmStatic
   @Suppress("UNUSED_PARAMETER")

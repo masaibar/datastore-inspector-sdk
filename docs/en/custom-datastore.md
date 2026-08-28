@@ -8,6 +8,8 @@ never sends raw persistence bytes to the inspection client or guesses a type or 
 A Store for which no safe projection can be resolved without configuration is `Unsupported` with
 a fixed reason code.
 
+The Custom DataStore API is [Experimental](api-stability.md). Both the codec and Gradle configuration require an explicit opt-in.
+
 ## Projection priority
 
 Runtime validates candidates in the following order for every snapshot. If multiple candidates
@@ -48,10 +50,11 @@ format or canonical document disagrees. Place the codec class in a source set us
 debuggable variants, such as `src/debug`, and give it a public no-argument constructor.
 
 ```kotlin
+@OptIn(ExperimentalDataStoreInspectorApi::class)
 public class SettingsCodec : InspectorCustomCodec<Settings> {
     override val codecId: String = "settings"
     override val schemaVersion: Int = 1
-    override val format: CustomDocumentFormat = CustomDocumentFormat.JSON
+    override val format: InspectorCustomDocumentFormat = InspectorCustomDocumentFormat.JSON
 
     override fun encode(value: Settings): String =
         """{"label":${Json.encodeToString(value.label)}}"""
@@ -71,6 +74,7 @@ In the application module's Gradle configuration, bind the exact JVM classes of 
 value, and codec one-to-one.
 
 ```kotlin
+@OptIn(ExperimentalDataStoreInspectorGradleApi::class)
 dataStoreInspector {
     customCodecBinding(
         "com.example.SettingsSerializer",
@@ -108,10 +112,7 @@ owner/descriptor pairs not present in the supported table are never guessed.
 observes a basename only when normal DataStore creation invokes the producer. A Serializer for a
 Proto `MessageLite` is not wrapped and is handed to the existing Proto adapter.
 
-A Custom Store whose actual Serializer cannot be captured through a supported creation path uses
-`CUSTOM_CREATION_ROUTE_UNSUPPORTED` or `CUSTOM_SERIALIZER_CAPTURE_UNAVAILABLE`.
-`registerFallback` registers the same instance held by the application; it does not make an
-uncaptured Serializer contract guessable.
+A Custom Store whose actual Serializer cannot be captured through a supported creation path uses `CUSTOM_CREATION_ROUTE_UNSUPPORTED` or `CUSTOM_SERIALIZER_CAPTURE_UNAVAILABLE`. `registerDataStoreInspectorFallback` registers the same instance held by the application; it does not make an uncaptured Serializer contract guessable.
 
 ## Write and timeout boundaries
 

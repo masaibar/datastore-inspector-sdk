@@ -39,9 +39,7 @@ English | [日本語](../compatibility.md)
   from which the actual instance or Serializer cannot be obtained
 - Guessing or directly editing a Custom Serializer's raw binary representation
 
-For Android paths outside automatic instrumentation, a debug-only `registerFallback` API accepts
-the same DataStore instance held by the application. The sample and initially guaranteed delegate
-paths do not use this fallback.
+For Android paths outside automatic instrumentation, a debug-only `registerDataStoreInspectorFallback` API accepts the same DataStore instance held by the application. The sample and initially guaranteed delegate paths do not use this fallback.
 
 ## Safety boundaries
 

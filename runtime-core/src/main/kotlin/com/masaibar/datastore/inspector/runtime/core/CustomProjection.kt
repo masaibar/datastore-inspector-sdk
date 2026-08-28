@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalDataStoreInspectorApi::class)
+
 package com.masaibar.datastore.inspector.runtime.core
 
 import com.masaibar.datastore.inspector.protocol.CustomDocumentFormat
@@ -442,7 +444,11 @@ private class CodecProjection<T : Any>(
   override val projectionId: String =
     fallbackProjectionId(binding.codec.codecId, binding.codec.schemaVersion)
   override val schemaVersion: Int = binding.codec.schemaVersion
-  override val format: CustomDocumentFormat = binding.codec.format
+  override val format: CustomDocumentFormat =
+    when (binding.codec.format) {
+      InspectorCustomDocumentFormat.JSON -> CustomDocumentFormat.JSON
+      InspectorCustomDocumentFormat.TEXT -> CustomDocumentFormat.TEXT
+    }
 
   override suspend fun encode(value: T): String {
     binding.codec.validate(value)

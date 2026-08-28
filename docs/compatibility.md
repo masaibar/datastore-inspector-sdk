@@ -33,7 +33,7 @@
 - 対応済み作成call siteを通らないCustom DataStore、実instance／Serializerを取得できない経路
 - Custom serializerのraw binaryを推測または直接編集すること
 
-自動計装対象外のAndroid経路には、利用者が保持する同じDataStore instanceを渡すdebug専用`registerFallback`を用意しています。sampleと初期保証delegate経路はfallbackを使いません。
+自動計装対象外のAndroid経路には、利用者が保持する同じDataStore instanceを渡すdebug専用`registerDataStoreInspectorFallback`を用意しています。sampleと初期保証delegate経路はfallbackを使いません。
 
 ## 安全境界
 

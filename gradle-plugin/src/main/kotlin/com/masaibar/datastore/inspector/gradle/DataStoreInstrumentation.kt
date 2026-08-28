@@ -48,6 +48,7 @@ private const val TYPED_EXPLICIT_DESCRIPTOR =
 private const val TYPED_DEFAULT_DESCRIPTOR =
   "(Ljava/lang/String;$SERIALIZER_DESCRIPTOR$CORRUPTION_DESCRIPTOR$MIGRATIONS_DESCRIPTOR$SCOPE_DESCRIPTOR$DEFAULT_SUFFIX_DESCRIPTOR)$RETURN_DESCRIPTOR"
 
+@InternalDataStoreInspectorGradleApi
 public abstract class DataStoreDelegateVisitorFactory :
   AsmClassVisitorFactory<InstrumentationParameters.None> {
   override fun isInstrumentable(classData: ClassData): Boolean =

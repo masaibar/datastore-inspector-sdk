@@ -22,6 +22,7 @@ import java.util.IdentityHashMap
 import java.util.ServiceLoader
 import java.util.UUID
 
+@InternalDataStoreInspectorApi
 public data class StoreDeclaration(
   val declarationId: String,
   val name: String,
@@ -33,11 +34,13 @@ public data class StoreDeclaration(
   val valueClassName: String? = null
 )
 
+@InternalDataStoreInspectorApi
 public data class StoreCandidate(
   val instance: Any,
   val declaration: StoreDeclaration
 )
 
+@InternalDataStoreInspectorApi
 public sealed interface AdapterResolution {
   public data class Resolved(
     val adapter: StoreAdapter
@@ -54,11 +57,13 @@ public sealed interface AdapterResolution {
   public data object NotApplicable : AdapterResolution
 }
 
+@InternalDataStoreInspectorApi
 public data class AdapterSnapshot(
   val fingerprint: String,
   val payload: SnapshotPayload
 )
 
+@InternalDataStoreInspectorApi
 public sealed interface AdapterObservation {
   public data class Snapshot(
     val snapshot: AdapterSnapshot
@@ -69,10 +74,12 @@ public sealed interface AdapterObservation {
   ) : AdapterObservation
 }
 
+@InternalDataStoreInspectorApi
 public fun interface StoreSnapshotObserver {
   public fun onObservation(observation: AdapterObservation)
 }
 
+@InternalDataStoreInspectorApi
 public sealed interface AdapterWriteResult {
   public data class Applied(
     val snapshot: AdapterSnapshot
@@ -90,6 +97,7 @@ public sealed interface AdapterWriteResult {
   ) : AdapterWriteResult
 }
 
+@InternalDataStoreInspectorApi
 public class StoreAdapterException(
   public val code: ProtocolErrorCode,
   public val retryable: Boolean = false,
@@ -97,10 +105,12 @@ public class StoreAdapterException(
   cause: Throwable? = null
 ) : IllegalStateException(code.name, cause)
 
+@InternalDataStoreInspectorApi
 public class StoreSnapshotUnsupportedException(
   public val reason: UnsupportedReason
 ) : IllegalStateException(reason.code)
 
+@InternalDataStoreInspectorApi
 public interface StoreAdapter : AutoCloseable {
   public val kind: StoreKind
   public val capabilities: Set<StoreCapability>
@@ -134,6 +144,7 @@ public interface StoreAdapter : AutoCloseable {
   override fun close(): Unit = Unit
 }
 
+@InternalDataStoreInspectorApi
 public fun defaultStoreSemantics(kind: StoreKind): StoreSemantics =
   when (kind) {
     StoreKind.PREFERENCES ->
@@ -159,6 +170,7 @@ public fun defaultStoreSemantics(kind: StoreKind): StoreSemantics =
       )
   }
 
+@InternalDataStoreInspectorApi
 public interface StoreAdapterFactory {
   public val providerId: String
 
@@ -168,6 +180,7 @@ public interface StoreAdapterFactory {
   public fun create(candidate: StoreCandidate): AdapterResolution
 }
 
+@InternalDataStoreInspectorApi
 public sealed interface RegistryState {
   public data object Declared : RegistryState
 
@@ -184,6 +197,7 @@ public sealed interface RegistryState {
   ) : RegistryState
 }
 
+@InternalDataStoreInspectorApi
 public data class RegistryEntry(
   val storeId: String,
   val declaration: StoreDeclaration,
@@ -191,6 +205,7 @@ public data class RegistryEntry(
 )
 
 /** process localで、instanceのobject identityを基準に重複排除するRegistryです。 */
+@InternalDataStoreInspectorApi
 public class DataStoreRegistry(
   private val storeIdFactory: () -> String = { UUID.randomUUID().toString() }
 ) {
@@ -293,6 +308,7 @@ public class DataStoreRegistry(
   }
 }
 
+@InternalDataStoreInspectorApi
 public class SnapshotLeaseCache(
   private val nowMillis: () -> Long = System::currentTimeMillis,
   private val tokenFactory: () -> String = {
@@ -412,4 +428,5 @@ public class SnapshotLeaseCache(
 
 internal fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
+@InternalDataStoreInspectorApi
 public fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).toHex()

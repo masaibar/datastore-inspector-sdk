@@ -2,6 +2,7 @@ package com.masaibar.datastore.inspector.protocol
 
 import java.nio.charset.StandardCharsets
 
+@InternalDataStoreInspectorProtocolApi
 public object CanonicalUtf8 {
   public val comparator: Comparator<String> = Comparator { left, right ->
     compareBytes(left.toByteArray(StandardCharsets.UTF_8), right.toByteArray(StandardCharsets.UTF_8))

@@ -72,6 +72,7 @@ kotlin {
   compilerOptions {
     jvmTarget.set(JvmTarget.JVM_17)
     freeCompilerArgs.add("-Xjdk-release=17")
+    optIn.add("com.masaibar.datastore.inspector.gradle.InternalDataStoreInspectorGradleApi")
   }
   sourceSets.named("main") {
     kotlin.srcDir(generatedCoordinatesDirectory)

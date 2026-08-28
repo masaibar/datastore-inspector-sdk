@@ -1,0 +1,1 @@
+{"requestId":"client-write-1","payload":{"type":"write","write":{"storeId":"preferences-main","expectedRevision":7,"expectedContentToken":"runtime-opaque-token","operation":{"type":"mutate_preferences","mutation":{"type":"put","key":"launch_count","value":{"type":"int","value":43}}},"correlationId":"ide-write-correlation-1"}}}

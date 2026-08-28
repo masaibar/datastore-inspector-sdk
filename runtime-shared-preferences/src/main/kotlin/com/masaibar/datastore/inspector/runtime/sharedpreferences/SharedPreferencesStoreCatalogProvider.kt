@@ -15,6 +15,7 @@ import com.masaibar.datastore.inspector.protocol.StoreSemantics
 import com.masaibar.datastore.inspector.protocol.WriteConsistency
 import com.masaibar.datastore.inspector.runtime.core.CatalogStoreCandidate
 import com.masaibar.datastore.inspector.runtime.core.DynamicStoreCatalog
+import com.masaibar.datastore.inspector.runtime.core.InternalDataStoreInspectorApi
 import com.masaibar.datastore.inspector.runtime.core.PreferencesSnapshotLimits
 import com.masaibar.datastore.inspector.runtime.core.StoreAdapterException
 import com.masaibar.datastore.inspector.runtime.core.StoreCatalogException
@@ -39,6 +40,7 @@ import java.nio.file.Path
 import java.nio.file.attribute.BasicFileAttributes
 import javax.xml.parsers.SAXParserFactory
 
+@InternalDataStoreInspectorApi
 public class SharedPreferencesStoreCatalogProvider() : StoreCatalogProvider {
   override val providerId: String = "shared-preferences-v1"
   override val requiredCapabilities: Set<String> =

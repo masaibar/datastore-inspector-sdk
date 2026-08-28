@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalDataStoreInspectorApi::class)
+
 package com.masaibar.datastore.inspector.runtime.core
 
+import androidx.datastore.core.DataStore
 import com.masaibar.datastore.inspector.protocol.ClearPreferences
 import com.masaibar.datastore.inspector.protocol.PreferenceEntry
 import com.masaibar.datastore.inspector.protocol.PreferencesTree
@@ -17,6 +20,8 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlin.concurrent.thread
 
 class RuntimeStateSpec : DescribeSpec() {
@@ -64,16 +69,21 @@ class RuntimeStateSpec : DescribeSpec() {
           (results.map { it.storeId }.distinct().size) shouldBe (1)
         }
 
-        it("fallback登録は利用者が保持する同じinstanceをidentityで重複排除する") {
-          val instance = Any()
-          val firstDeclaration = declaration("fallback-${System.nanoTime()}")
-          val secondDeclaration = declaration("fallback-duplicate-${System.nanoTime()}")
+        it("fallback registration deduplicates the same application instance by identity") {
+          val instance = FallbackDataStore()
+          val firstId = "fallback-${System.nanoTime()}"
+          val secondId = "fallback-duplicate-${System.nanoTime()}"
 
-          val first = DataStoreInspectorRuntime.registerFallback(instance, firstDeclaration)
-          val duplicate = DataStoreInspectorRuntime.registerFallback(instance, secondDeclaration)
+          registerDataStoreInspectorFallback(instance, fallbackDeclaration(firstId))
+          registerDataStoreInspectorFallback(instance, fallbackDeclaration(secondId))
 
-          (duplicate.storeId) shouldBe (first.storeId)
-          (duplicate.declaration.declarationId) shouldBe (firstDeclaration.declarationId)
+          val entries =
+            DataStoreInspectorRuntime.registry().entries().filter { entry ->
+              entry.declaration.declarationId == firstId ||
+                entry.declaration.declarationId == secondId
+            }
+          (entries.size) shouldBe (1)
+          (entries.single().declaration.declarationId) shouldBe (firstId)
         }
 
         it("tokenはStoreに束縛され不一致でも消費する") {
@@ -228,7 +238,21 @@ class RuntimeStateSpec : DescribeSpec() {
 
   private fun declaration(id: String) = StoreDeclaration(id, id, null, StoreKind.PREFERENCES, "owner", id)
 
+  private fun fallbackDeclaration(id: String) =
+    InspectorFallbackStoreDeclaration(
+      declarationId = id,
+      name = id,
+      kind = InspectorFallbackStoreKind.PREFERENCES
+    )
+
   private data class EqualCandidate(val value: Int)
+
+  private class FallbackDataStore : DataStore<Any> {
+    override val data: Flow<Any> = emptyFlow()
+
+    override suspend fun updateData(transform: suspend (t: Any) -> Any): Any =
+      error("FallbackDataStore must not be read or updated.")
+  }
 
   private class FakeFactory : StoreAdapterFactory {
     override val providerId = "fake"

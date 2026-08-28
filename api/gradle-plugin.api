@@ -1,0 +1,468 @@
+public final class com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration {
+  public static final com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;
+  public final void configureApplication(org.gradle.api.Project, com.masaibar.datastore.inspector.gradle.DataStoreInspectorExtension);
+    descriptor: (Lorg/gradle/api/Project;Lcom/masaibar/datastore/inspector/gradle/DataStoreInspectorExtension;)V
+
+  public final void configureLibrary(org.gradle.api.Project);
+    descriptor: (Lorg/gradle/api/Project;)V
+
+  public static final java.util.Set access$getSERVICE_RESOURCES$p();
+    descriptor: ()Ljava/util/Set;
+
+  public static final void access$scanDependencySignals(com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration, org.gradle.api.Project, java.util.Set, com.masaibar.datastore.inspector.gradle.DependencySignals);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;Lorg/gradle/api/Project;Ljava/util/Set;Lcom/masaibar/datastore/inspector/gradle/DependencySignals;)V
+
+  public static final void access$configureSchemaFragments(com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration, org.gradle.api.Project, java.util.Set, java.util.Map, java.util.Map, org.gradle.api.tasks.TaskProvider);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;Lorg/gradle/api/Project;Ljava/util/Set;Ljava/util/Map;Ljava/util/Map;Lorg/gradle/api/tasks/TaskProvider;)V
+
+  public static final void access$addOnce(com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration, org.gradle.api.Project, java.lang.String, java.lang.String);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;Lorg/gradle/api/Project;Ljava/lang/String;Ljava/lang/String;)V
+
+  public static final void access$observeProjectDependencies(com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration, org.gradle.api.Project, org.gradle.api.Project, com.masaibar.datastore.inspector.gradle.DependencySignals, java.util.Set, java.util.Map, org.gradle.api.tasks.TaskProvider);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;Lorg/gradle/api/Project;Lorg/gradle/api/Project;Lcom/masaibar/datastore/inspector/gradle/DependencySignals;Ljava/util/Set;Ljava/util/Map;Lorg/gradle/api/tasks/TaskProvider;)V
+
+  public static final void access$observeExternalDependency(com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration, java.lang.String, java.lang.String, com.masaibar.datastore.inspector.gradle.DependencySignals);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;Ljava/lang/String;Ljava/lang/String;Lcom/masaibar/datastore/inspector/gradle/DependencySignals;)V
+
+  public static final boolean access$isInspectorComponent(com.masaibar.datastore.inspector.gradle.AndroidVariantIntegration, org.gradle.api.Project);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/AndroidVariantIntegration;Lorg/gradle/api/Project;)Z
+}
+public final class com.masaibar.datastore.inspector.gradle.ArtifactCoordinates {
+  public static final com.masaibar.datastore.inspector.gradle.ArtifactCoordinates INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/ArtifactCoordinates;
+  public static final java.lang.String GROUP = "com.masaibar.datastore-inspector";
+    descriptor: Ljava/lang/String;
+  public static final java.lang.String VERSION = "1.0.0";
+    descriptor: Ljava/lang/String;
+}
+public final class com.masaibar.datastore.inspector.gradle.ConstructorRoute {
+  public static final com.masaibar.datastore.inspector.gradle.ConstructorRoute$Companion Companion;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute$Companion;
+  public com.masaibar.datastore.inspector.gradle.ConstructorRoute(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+
+  public final java.lang.String getOwner();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOriginalDescriptor();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeOwner();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeDescriptor();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component2();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final com.masaibar.datastore.inspector.gradle.ConstructorRoute copy(java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute;
+
+  public static com.masaibar.datastore.inspector.gradle.ConstructorRoute copy$default(com.masaibar.datastore.inspector.gradle.ConstructorRoute, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public static final java.util.List access$getRoutes$cp();
+    descriptor: ()Ljava/util/List;
+}
+public final class com.masaibar.datastore.inspector.gradle.ConstructorRoute$Companion {
+  public final java.util.List<com.masaibar.datastore.inspector.gradle.ConstructorRoute> getRoutes$gradle_plugin();
+    descriptor: ()Ljava/util/List;
+
+  public final boolean isKnownOwner(java.lang.String);
+    descriptor: (Ljava/lang/String;)Z
+
+  public final com.masaibar.datastore.inspector.gradle.ConstructorRoute find(java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;)Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute;
+
+  public com.masaibar.datastore.inspector.gradle.ConstructorRoute$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public static final com.masaibar.datastore.inspector.gradle.ConstructorRoute access$route(com.masaibar.datastore.inspector.gradle.ConstructorRoute$Companion, java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute$Companion;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/masaibar/datastore/inspector/gradle/ConstructorRoute;
+}
+public final class com.masaibar.datastore.inspector.gradle.CustomCodecBindingSourceProducer {
+  public static final com.masaibar.datastore.inspector.gradle.CustomCodecBindingSourceProducer INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/CustomCodecBindingSourceProducer;
+  public static final java.lang.String PROVIDER_CLASS = "com.masaibar.datastore.inspector.generated.GeneratedCustomCodecBindingProvider";
+    descriptor: Ljava/lang/String;
+  public static final java.lang.String SERVICE_INTERFACE = "com.masaibar.datastore.inspector.runtime.core.InspectorCustomCodecBindingProvider";
+    descriptor: Ljava/lang/String;
+  public final void produce(java.util.List<java.lang.String>, java.io.File, java.io.File);
+    descriptor: (Ljava/util/List;Ljava/io/File;Ljava/io/File;)V
+}
+public final class com.masaibar.datastore.inspector.gradle.DataStoreCallClassVisitor extends org.objectweb.asm.ClassVisitor {
+  public com.masaibar.datastore.inspector.gradle.DataStoreCallClassVisitor(org.objectweb.asm.ClassVisitor, kotlin.jvm.functions.Function2<? super java.lang.String, ? super java.lang.Long, kotlin.Unit>);
+    descriptor: (Lorg/objectweb/asm/ClassVisitor;Lkotlin/jvm/functions/Function2;)V
+
+  public com.masaibar.datastore.inspector.gradle.DataStoreCallClassVisitor(org.objectweb.asm.ClassVisitor, kotlin.jvm.functions.Function2, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Lorg/objectweb/asm/ClassVisitor;Lkotlin/jvm/functions/Function2;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public void visit(int, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String[]);
+    descriptor: (IILjava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)V
+
+  public org.objectweb.asm.FieldVisitor visitField(int, java.lang.String, java.lang.String, java.lang.String, java.lang.Object);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Object;)Lorg/objectweb/asm/FieldVisitor;
+
+  public org.objectweb.asm.MethodVisitor visitMethod(int, java.lang.String, java.lang.String, java.lang.String, java.lang.String[]);
+    descriptor: (ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;)Lorg/objectweb/asm/MethodVisitor;
+
+  public void visitEnd();
+    descriptor: ()V
+}
+public abstract class com.masaibar.datastore.inspector.gradle.DataStoreDelegateVisitorFactory implements com.android.build.api.instrumentation.AsmClassVisitorFactory<com.android.build.api.instrumentation.InstrumentationParameters$None> {
+  public com.masaibar.datastore.inspector.gradle.DataStoreDelegateVisitorFactory();
+    descriptor: ()V
+
+  public boolean isInstrumentable(com.android.build.api.instrumentation.ClassData);
+    descriptor: (Lcom/android/build/api/instrumentation/ClassData;)Z
+
+  public org.objectweb.asm.ClassVisitor createClassVisitor(com.android.build.api.instrumentation.ClassContext, org.objectweb.asm.ClassVisitor);
+    descriptor: (Lcom/android/build/api/instrumentation/ClassContext;Lorg/objectweb/asm/ClassVisitor;)Lorg/objectweb/asm/ClassVisitor;
+}
+public abstract class com.masaibar.datastore.inspector.gradle.DataStoreInspectorExtension {
+  public com.masaibar.datastore.inspector.gradle.DataStoreInspectorExtension(org.gradle.api.model.ObjectFactory);
+    descriptor: (Lorg/gradle/api/model/ObjectFactory;)V
+
+  public final org.gradle.api.provider.ListProperty<java.lang.String> getSchemaMappings$gradle_plugin();
+    descriptor: ()Lorg/gradle/api/provider/ListProperty;
+
+  public final org.gradle.api.provider.ListProperty<java.lang.String> getCustomCodecBindings$gradle_plugin();
+    descriptor: ()Lorg/gradle/api/provider/ListProperty;
+
+  public final void schemaEntry(java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;)V
+
+  public final void customCodecBinding(java.lang.String, java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+
+  public static final kotlin.text.Regex access$getMAPPING_PART$cp();
+    descriptor: ()Lkotlin/text/Regex;
+
+  public static final kotlin.text.Regex access$getCLASS_NAME$cp();
+    descriptor: ()Lkotlin/text/Regex;
+}
+public final class com.masaibar.datastore.inspector.gradle.DataStoreInspectorPlugin implements org.gradle.api.Plugin<org.gradle.api.Project> {
+  public com.masaibar.datastore.inspector.gradle.DataStoreInspectorPlugin();
+    descriptor: ()V
+
+  public void apply(org.gradle.api.Project);
+    descriptor: (Lorg/gradle/api/Project;)V
+
+  public void apply(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)V
+}
+public final class com.masaibar.datastore.inspector.gradle.DataStoreInstrumentationKt {
+  public static final java.lang.String access$appendMetadata(java.lang.String);
+    descriptor: (Ljava/lang/String;)Ljava/lang/String;
+
+  public static final java.lang.String access$prependReceiver(java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+}
+public final class com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute extends java.lang.Enum<com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute> {
+  public static final com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute PREFERENCES_DEFAULT;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+  public static final com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute PREFERENCES_EXPLICIT;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+  public static final com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute TYPED_DEFAULT;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+  public static final com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute TYPED_EXPLICIT;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+  public static final com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute DEVICE_PROTECTED_DEFAULT;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+  public static final com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute DEVICE_PROTECTED_EXPLICIT;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+  public final java.lang.String getId();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOwner();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOriginalName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOriginalDescriptor();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeOwner();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeDescriptor();
+    descriptor: ()Ljava/lang/String;
+
+  public static com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute[] values();
+    descriptor: ()[Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+
+  public static com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute valueOf(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lcom/masaibar/datastore/inspector/gradle/DelegateGenerationRoute;
+
+  public static kotlin.enums.EnumEntries<com.masaibar.datastore.inspector.gradle.DelegateGenerationRoute> getEntries();
+    descriptor: ()Lkotlin/enums/EnumEntries;
+}
+public final class com.masaibar.datastore.inspector.gradle.DependencySignals {
+  public com.masaibar.datastore.inspector.gradle.DependencySignals(boolean, boolean);
+    descriptor: (ZZ)V
+
+  public com.masaibar.datastore.inspector.gradle.DependencySignals(boolean, boolean, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final boolean getPreferences();
+    descriptor: ()Z
+
+  public final void setPreferences(boolean);
+    descriptor: (Z)V
+
+  public final boolean getProtobuf();
+    descriptor: ()Z
+
+  public final void setProtobuf(boolean);
+    descriptor: (Z)V
+
+  public final boolean component1();
+    descriptor: ()Z
+
+  public final boolean component2();
+    descriptor: ()Z
+
+  public final com.masaibar.datastore.inspector.gradle.DependencySignals copy(boolean, boolean);
+    descriptor: (ZZ)Lcom/masaibar/datastore/inspector/gradle/DependencySignals;
+
+  public static com.masaibar.datastore.inspector.gradle.DependencySignals copy$default(com.masaibar.datastore.inspector.gradle.DependencySignals, boolean, boolean, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/DependencySignals;ZZILjava/lang/Object;)Lcom/masaibar/datastore/inspector/gradle/DependencySignals;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public com.masaibar.datastore.inspector.gradle.DependencySignals();
+    descriptor: ()V
+}
+public interface com.masaibar.datastore.inspector.gradle.ExperimentalDataStoreInspectorGradleApi extends java.lang.annotation.Annotation {
+}
+public abstract class com.masaibar.datastore.inspector.gradle.GenerateCustomCodecBindingsTask extends org.gradle.api.DefaultTask {
+  public com.masaibar.datastore.inspector.gradle.GenerateCustomCodecBindingsTask();
+    descriptor: ()V
+
+  public abstract org.gradle.api.provider.ListProperty<java.lang.String> getBindings();
+    descriptor: ()Lorg/gradle/api/provider/ListProperty;
+
+  public abstract org.gradle.api.file.DirectoryProperty getJavaOutputDirectory();
+    descriptor: ()Lorg/gradle/api/file/DirectoryProperty;
+
+  public abstract org.gradle.api.file.DirectoryProperty getResourcesOutputDirectory();
+    descriptor: ()Lorg/gradle/api/file/DirectoryProperty;
+
+  public final void generate();
+    descriptor: ()V
+}
+public abstract class com.masaibar.datastore.inspector.gradle.GenerateDataStoreInspectorSchemaTask extends org.gradle.api.DefaultTask {
+  public com.masaibar.datastore.inspector.gradle.GenerateDataStoreInspectorSchemaTask();
+    descriptor: ()V
+
+  public abstract org.gradle.api.file.ConfigurableFileCollection getDescriptorFragments();
+    descriptor: ()Lorg/gradle/api/file/ConfigurableFileCollection;
+
+  public abstract org.gradle.api.provider.ListProperty<java.lang.String> getSchemaMappings();
+    descriptor: ()Lorg/gradle/api/provider/ListProperty;
+
+  public abstract org.gradle.api.file.DirectoryProperty getOutputDirectory();
+    descriptor: ()Lorg/gradle/api/file/DirectoryProperty;
+
+  public final void generate();
+    descriptor: ()V
+}
+public final class com.masaibar.datastore.inspector.gradle.GenerateDataStoreInspectorSchemaTask$generate$$inlined$sortedBy$1<T> implements java.util.Comparator {
+  public com.masaibar.datastore.inspector.gradle.GenerateDataStoreInspectorSchemaTask$generate$$inlined$sortedBy$1();
+    descriptor: ()V
+
+  public final int compare(T, T);
+    descriptor: (Ljava/lang/Object;Ljava/lang/Object;)I
+}
+public abstract class com.masaibar.datastore.inspector.gradle.GenerateInstrumentationReportTask extends org.gradle.api.DefaultTask {
+  public com.masaibar.datastore.inspector.gradle.GenerateInstrumentationReportTask();
+    descriptor: ()V
+
+  public abstract org.gradle.api.provider.ListProperty<java.lang.String> getLines();
+    descriptor: ()Lorg/gradle/api/provider/ListProperty;
+
+  public abstract org.gradle.api.file.RegularFileProperty getOutputFile();
+    descriptor: ()Lorg/gradle/api/file/RegularFileProperty;
+
+  public final void generate();
+    descriptor: ()V
+}
+public final class com.masaibar.datastore.inspector.gradle.InspectorDependencyPlanner {
+  public static final com.masaibar.datastore.inspector.gradle.InspectorDependencyPlanner INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/InspectorDependencyPlanner;
+  public final void observe(java.lang.String, java.lang.String, com.masaibar.datastore.inspector.gradle.DependencySignals);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;Lcom/masaibar/datastore/inspector/gradle/DependencySignals;)V
+
+  public final java.util.List<java.lang.String> runtimeArtifacts(com.masaibar.datastore.inspector.gradle.DependencySignals);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/DependencySignals;)Ljava/util/List;
+}
+public final class com.masaibar.datastore.inspector.gradle.InstrumentationBudget {
+  public static final com.masaibar.datastore.inspector.gradle.InstrumentationBudget INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/InstrumentationBudget;
+  public static final int TARGET_CLASS_COUNT = 25000;
+    descriptor: I
+  public static final long TARGET_ELAPSED_MILLIS = 30000l;
+    descriptor: J
+  public static final int REGRESSION_SAMPLE_CLASS_COUNT = 1000;
+    descriptor: I
+  public static final long REGRESSION_SAMPLE_ELAPSED_MILLIS = 5000l;
+    descriptor: J
+}
+public final class com.masaibar.datastore.inspector.gradle.InstrumentationClassPolicy {
+  public static final com.masaibar.datastore.inspector.gradle.InstrumentationClassPolicy INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/InstrumentationClassPolicy;
+  public final boolean isInstrumentable(java.lang.String);
+    descriptor: (Ljava/lang/String;)Z
+}
+public final class com.masaibar.datastore.inspector.gradle.InstrumentationPerformanceMetricRecorder {
+  public static final com.masaibar.datastore.inspector.gradle.InstrumentationPerformanceMetricRecorder INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/InstrumentationPerformanceMetricRecorder;
+  public static final java.lang.String OUTPUT_DIRECTORY_ENV = "DATASTORE_INSPECTOR_INSTRUMENTATION_METRICS_DIRECTORY";
+    descriptor: Ljava/lang/String;
+  public static final java.lang.String CORPUS_CLASS_PREFIX_ENV = "DATASTORE_INSPECTOR_INSTRUMENTATION_METRICS_CORPUS_PREFIX";
+    descriptor: Ljava/lang/String;
+  public final kotlin.jvm.functions.Function2<java.lang.String, java.lang.Long, kotlin.Unit> callback();
+    descriptor: ()Lkotlin/jvm/functions/Function2;
+}
+public interface com.masaibar.datastore.inspector.gradle.InternalDataStoreInspectorGradleApi extends java.lang.annotation.Annotation {
+}
+public final class com.masaibar.datastore.inspector.gradle.InvocationRoute {
+  public com.masaibar.datastore.inspector.gradle.InvocationRoute(java.lang.String, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean, boolean);
+    descriptor: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZ)V
+
+  public final java.lang.String getId();
+    descriptor: ()Ljava/lang/String;
+
+  public final int getOpcode();
+    descriptor: ()I
+
+  public final java.lang.String getOwner();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOriginalName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getOriginalDescriptor();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeOwner();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeName();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String getBridgeDescriptor();
+    descriptor: ()Ljava/lang/String;
+
+  public final boolean getAddDeclarationMetadata();
+    descriptor: ()Z
+
+  public final boolean getUnknownDescriptorIsError();
+    descriptor: ()Z
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final int component2();
+    descriptor: ()I
+
+  public final java.lang.String component3();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component4();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component5();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component6();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component7();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component8();
+    descriptor: ()Ljava/lang/String;
+
+  public final boolean component9();
+    descriptor: ()Z
+
+  public final boolean component10();
+    descriptor: ()Z
+
+  public final com.masaibar.datastore.inspector.gradle.InvocationRoute copy(java.lang.String, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean, boolean);
+    descriptor: (Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZ)Lcom/masaibar/datastore/inspector/gradle/InvocationRoute;
+
+  public static com.masaibar.datastore.inspector.gradle.InvocationRoute copy$default(com.masaibar.datastore.inspector.gradle.InvocationRoute, java.lang.String, int, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, java.lang.String, boolean, boolean, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/gradle/InvocationRoute;Ljava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ZZILjava/lang/Object;)Lcom/masaibar/datastore/inspector/gradle/InvocationRoute;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+public final class com.masaibar.datastore.inspector.gradle.InvocationRoutes {
+  public static final com.masaibar.datastore.inspector.gradle.InvocationRoutes INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/InvocationRoutes;
+  public final java.util.List<com.masaibar.datastore.inspector.gradle.InvocationRoute> getRoutes();
+    descriptor: ()Ljava/util/List;
+
+  public final boolean requiresKnownDescriptor(java.lang.String, java.lang.String);
+    descriptor: (Ljava/lang/String;Ljava/lang/String;)Z
+}
+public final class com.masaibar.datastore.inspector.gradle.SchemaIndexProducer {
+  public static final com.masaibar.datastore.inspector.gradle.SchemaIndexProducer INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/gradle/SchemaIndexProducer;
+  public final void produce(java.util.List<byte[]>, java.util.List<java.lang.String>, java.io.File);
+    descriptor: (Ljava/util/List;Ljava/util/List;Ljava/io/File;)V
+}
+public final class com.masaibar.datastore.inspector.gradle.SchemaIndexProducer$produce$$inlined$sortedBy$1<T> implements java.util.Comparator {
+  public com.masaibar.datastore.inspector.gradle.SchemaIndexProducer$produce$$inlined$sortedBy$1();
+    descriptor: ()V
+
+  public final int compare(T, T);
+    descriptor: (Ljava/lang/Object;Ljava/lang/Object;)I
+}
+public interface com.masaibar.datastore.inspector.gradle.StableDataStoreInspectorGradleApi extends java.lang.annotation.Annotation {
+}

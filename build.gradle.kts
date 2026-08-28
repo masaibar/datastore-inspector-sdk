@@ -4,21 +4,36 @@ import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.ExecOperations
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
 import java.io.File
 import java.io.InputStream
+import java.lang.reflect.InvocationTargetException
+import java.net.URLClassLoader
+import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
+import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
 
 data class PublishedArtifactMetadata(
@@ -293,6 +308,327 @@ abstract class VerifyPublishedJvmCompatibility : DefaultTask() {
   }
 }
 
+abstract class PublishedApiBaselineTask @Inject constructor(
+  private val execOperations: ExecOperations
+) : DefaultTask() {
+  @get:InputDirectory
+  abstract val repositoryDirectory: DirectoryProperty
+
+  @get:Input
+  abstract val groupId: Property<String>
+
+  @get:Input
+  abstract val publicationVersion: Property<String>
+
+  @get:Input
+  abstract val artifactExtensions: MapProperty<String, String>
+
+  protected fun renderBaselines(): Map<String, String> {
+    val groupPath = groupId.get().replace('.', '/')
+    val version = publicationVersion.get()
+    return artifactExtensions.get().toSortedMap().mapValues { (artifactId, extension) ->
+      val artifact =
+        repositoryDirectory.get().asFile
+          .resolve(groupPath)
+          .resolve(artifactId)
+          .resolve(version)
+          .resolve("$artifactId-$version.$extension")
+      check(artifact.isFile) { "Published artifact for the API baseline is missing: $artifact" }
+      val classpath = if (extension == "aar") extractClassesJar(artifact, artifactId) else artifact
+      check(extension == "aar" || extension == "jar") {
+        "Unsupported artifact extension for the API baseline: $extension"
+      }
+      val publicClasses = publicClassNames(classpath)
+      check(publicClasses.isNotEmpty()) { "Published artifact contains no public classes: $artifact" }
+      renderJavap(classpath, publicClasses)
+    }
+  }
+
+  private fun extractClassesJar(aar: File, artifactId: String): File {
+    val output = temporaryDir.resolve("$artifactId/classes.jar")
+    output.parentFile.mkdirs()
+    ZipFile(aar).use { archive ->
+      val entry = checkNotNull(archive.getEntry("classes.jar")) { "AAR contains no classes.jar: $aar" }
+      archive.getInputStream(entry).use { input -> output.outputStream().use(input::copyTo) }
+    }
+    return output
+  }
+
+  private fun publicClassNames(classpath: File): List<String> =
+    ZipFile(classpath).use { archive ->
+      archive.entries().asSequence()
+        .filter { entry ->
+          !entry.isDirectory &&
+            entry.name.endsWith(".class") &&
+            !entry.name.startsWith("META-INF/") &&
+            entry.name != "module-info.class"
+        }
+        .filter { entry -> archive.getInputStream(entry).use { isPublicClass(it.readBytes()) } }
+        .map { entry -> entry.name.removeSuffix(".class").replace('/', '.') }
+        .sorted()
+        .toList()
+    }
+
+  private fun isPublicClass(bytes: ByteArray): Boolean =
+    DataInputStream(ByteArrayInputStream(bytes)).use { input ->
+      check(input.readInt() == 0xCAFEBABE.toInt()) { "Invalid class-file magic." }
+      input.readUnsignedShort()
+      input.readUnsignedShort()
+      val constantPoolCount = input.readUnsignedShort()
+      var index = 1
+      while (index < constantPoolCount) {
+        when (val tag = input.readUnsignedByte()) {
+          1 -> input.skipBytes(input.readUnsignedShort())
+          3, 4 -> input.skipBytes(4)
+          5, 6 -> {
+            input.skipBytes(8)
+            index++
+          }
+          7, 8, 16, 19, 20 -> input.skipBytes(2)
+          9, 10, 11, 12, 17, 18 -> input.skipBytes(4)
+          15 -> input.skipBytes(3)
+          else -> error("Unsupported class-file constant-pool tag: $tag")
+        }
+        index++
+      }
+      input.readUnsignedShort() and 0x0001 != 0
+    }
+
+  private fun renderJavap(classpath: File, classNames: List<String>): String {
+    val javap = File(System.getProperty("java.home"), "bin/javap")
+    check(javap.isFile) { "javap is missing: $javap" }
+    val rendered = StringBuilder()
+    classNames.chunked(100).forEach { batch ->
+      val stdout = ByteArrayOutputStream()
+      val stderr = ByteArrayOutputStream()
+      val result =
+        execOperations.exec {
+          commandLine(
+            javap.absolutePath,
+            "-classpath",
+            classpath.absolutePath,
+            "-protected",
+            "-s",
+            "-constants",
+            *batch.toTypedArray()
+          )
+          standardOutput = stdout
+          errorOutput = stderr
+          isIgnoreExitValue = true
+        }
+      check(result.exitValue == 0) {
+        "javap failed: ${stderr.toString(Charsets.UTF_8)}"
+      }
+      rendered.append(stdout.toString(Charsets.UTF_8))
+    }
+    return rendered
+      .lineSequence()
+      .filterNot { it.startsWith("Compiled from ") }
+      .joinToString(separator = "\n")
+      .trimEnd() + "\n"
+  }
+}
+
+abstract class DumpPublishedApiBaseline @Inject constructor(
+  execOperations: ExecOperations
+) : PublishedApiBaselineTask(execOperations) {
+  @get:OutputDirectory
+  abstract val baselineDirectory: DirectoryProperty
+
+  @TaskAction
+  fun dump() {
+    val outputDirectory = baselineDirectory.get().asFile
+    outputDirectory.mkdirs()
+    renderBaselines().forEach { (artifactId, content) ->
+      outputDirectory.resolve("$artifactId.api").writeText(content)
+    }
+    logger.lifecycle("Updated published API baselines: $outputDirectory")
+  }
+}
+
+abstract class VerifyPublishedApiBaseline @Inject constructor(
+  execOperations: ExecOperations
+) : PublishedApiBaselineTask(execOperations) {
+  @get:InputDirectory
+  abstract val baselineDirectory: DirectoryProperty
+
+  @get:OutputFile
+  abstract val reportFile: RegularFileProperty
+
+  @TaskAction
+  fun verify() {
+    val expected = renderBaselines()
+    val baselineDirectory = baselineDirectory.get().asFile
+    val baselineFiles = baselineDirectory.listFiles { file -> file.extension == "api" }.orEmpty()
+    val actualArtifactIds = baselineFiles.mapTo(sortedSetOf()) { it.nameWithoutExtension }
+    check(actualArtifactIds == expected.keys) {
+      "API baseline artifact set differs. Expected: ${expected.keys}; actual: $actualArtifactIds"
+    }
+    val report = mutableListOf<String>()
+    expected.forEach { (artifactId, current) ->
+      val baseline = baselineDirectory.resolve("$artifactId.api")
+      check(baseline.readText() == current) {
+        "$artifactId public API/ABI differs from its baseline. If intentional, run dumpPublishedApiBaseline and review the diff."
+      }
+      val digest = MessageDigest.getInstance("SHA-256").digest(current.toByteArray()).joinToString("") { "%02x".format(it) }
+      report += "$artifactId: sha256=$digest"
+    }
+    val output = reportFile.get().asFile
+    output.parentFile.mkdirs()
+    output.writeText(report.joinToString(separator = "\n", postfix = "\n"))
+    logger.lifecycle("Published API/ABI baselines match: $output")
+  }
+}
+
+abstract class VerifyProtocolWireCompatibility : DefaultTask() {
+  @get:Input
+  abstract val currentProtocolVersion: Property<String>
+
+  @get:Classpath
+  abstract val previousProtocolClasspath: ConfigurableFileCollection
+
+  @get:Classpath
+  abstract val currentProtocolClasspath: ConfigurableFileCollection
+
+  @get:InputFile
+  abstract val previousRuntimeResponse: RegularFileProperty
+
+  @get:InputFile
+  abstract val previousIdeRequest: RegularFileProperty
+
+  @get:InputFile
+  abstract val currentRuntimeResponse: RegularFileProperty
+
+  @get:InputFile
+  abstract val currentIdeRequest: RegularFileProperty
+
+  @get:OutputFile
+  abstract val reportFile: RegularFileProperty
+
+  @TaskAction
+  fun verify() {
+    val previousResponse = previousRuntimeResponse.get().asFile
+    val previousRequest = previousIdeRequest.get().asFile
+    val currentResponse = currentRuntimeResponse.get().asFile
+    val currentRequest = currentIdeRequest.get().asFile
+
+    decode(previousProtocolClasspath, "decodeResponse", previousResponse)
+    decode(previousProtocolClasspath, "decodeRequest", previousRequest)
+    decode(previousProtocolClasspath, "decodeResponse", currentResponse)
+    decode(previousProtocolClasspath, "decodeRequest", currentRequest)
+    decode(currentProtocolClasspath, "decodeResponse", previousResponse)
+    decode(currentProtocolClasspath, "decodeRequest", previousRequest)
+    decode(currentProtocolClasspath, "decodeRequest", currentRequest)
+
+    val output = reportFile.get().asFile
+    output.parentFile.mkdirs()
+    output.writeText(
+      "protocol 0.2.0: previous request/response and current IDE request/Runtime response decoded\n" +
+        "protocol ${currentProtocolVersion.get()}: previous request/response and current IDE request decoded\n"
+    )
+    logger.lifecycle(
+      "Protocol 0.2.0/${currentProtocolVersion.get()} wire cross-compatibility passed: $output"
+    )
+  }
+
+  private fun decode(
+    classpath: ConfigurableFileCollection,
+    methodName: String,
+    fixture: File
+  ) {
+    URLClassLoader(
+      classpath.files.map(File::toURI).map { it.toURL() }.toTypedArray(),
+      ClassLoader.getPlatformClassLoader()
+    ).use { classLoader ->
+      try {
+        val protocolJson =
+          classLoader.loadClass("com.masaibar.datastore.inspector.protocol.ProtocolJson")
+        val instance = protocolJson.getField("INSTANCE").get(null)
+        protocolJson
+          .getMethod(methodName, ByteArray::class.java)
+          .invoke(instance, fixture.readBytes())
+      } catch (error: InvocationTargetException) {
+        throw IllegalStateException(
+          "${fixture.name} failed $methodName: ${error.targetException.message}",
+          error.targetException
+        )
+      }
+    }
+  }
+}
+
+abstract class VerifySourceApiClassifications : DefaultTask() {
+  @get:org.gradle.api.tasks.Internal
+  abstract val projectDirectory: DirectoryProperty
+
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  abstract val sourceFiles: ConfigurableFileCollection
+
+  @get:OutputFile
+  abstract val reportFile: RegularFileProperty
+
+  @TaskAction
+  fun verify() {
+    val markers =
+      setOf(
+        "StableDataStoreInspectorGradleApi",
+        "ExperimentalDataStoreInspectorGradleApi",
+        "InternalDataStoreInspectorGradleApi",
+        "ExperimentalDataStoreInspectorApi",
+        "InternalDataStoreInspectorApi",
+        "InternalDataStoreInspectorProtocolApi"
+      )
+    val markerDefinition = Regex("^public annotation class (?:${markers.joinToString("|")})$")
+    val unclassified = mutableListOf<String>()
+    val files = sourceFiles.files.filter(File::isFile).sortedBy(File::getPath)
+    files.forEach { source ->
+      val lines = source.readLines()
+      lines.forEachIndexed { index, line ->
+        if (!line.startsWith("public ") || markerDefinition.matches(line.trim())) return@forEachIndexed
+        val annotations =
+          lines.subList(0, index)
+            .asReversed()
+            .dropWhile(String::isBlank)
+            .takeWhile { candidate -> candidate.trimStart().startsWith("@") }
+            .map(String::trim)
+        if (annotations.none { annotation -> markers.any { marker -> annotation.startsWith("@$marker") } }) {
+          unclassified += "${source.relativeTo(projectDirectory.get().asFile)}:${index + 1}: ${line.trim()}"
+        }
+      }
+    }
+    check(unclassified.isEmpty()) {
+      "Published top-level declarations must be classified as Stable, Experimental, or Internal:\n" +
+        unclassified.joinToString("\n")
+    }
+
+    val optInMarkers =
+      setOf(
+        "ExperimentalDataStoreInspectorGradleApi",
+        "InternalDataStoreInspectorGradleApi",
+        "ExperimentalDataStoreInspectorApi",
+        "InternalDataStoreInspectorApi",
+        "InternalDataStoreInspectorProtocolApi"
+      )
+    optInMarkers.forEach { marker ->
+      val markerSource = files.firstOrNull { source -> "public annotation class $marker" in source.readText() }
+      check(markerSource != null) { "API marker is missing: $marker" }
+      val markerText = markerSource.readText()
+      val declaration = markerText.indexOf("public annotation class $marker")
+      val previousMarker = markerText.lastIndexOf("public annotation class ", declaration - 1)
+      val prefix = markerText.substring(maxOf(previousMarker + 1, declaration - 800), declaration)
+      check("@RequiresOptIn(" in prefix && "level = RequiresOptIn.Level.ERROR" in prefix) {
+        "API marker must require an ERROR-level opt-in: $marker"
+      }
+    }
+
+    val output = reportFile.get().asFile
+    output.parentFile.mkdirs()
+    output.writeText("classified top-level declarations: ${files.size} source files\n")
+    logger.lifecycle("Published source API classifications are complete: $output")
+  }
+}
+
 plugins {
   base
   alias(libs.plugins.ktlint)
@@ -356,6 +692,24 @@ subprojects {
 
 val publicRepositoryUrl = "https://github.com/masaibar/datastore-inspector-sdk"
 val publicationRepositoryDirectory = layout.buildDirectory.dir("publication-repository")
+val previousProtocolVersion = "0.2.0"
+val previousProtocolRuntimeClasspath =
+  configurations.create("previousProtocolRuntimeClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+  }
+val currentProtocolRuntimeClasspath =
+  configurations.create("currentProtocolRuntimeClasspath") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+  }
+dependencies {
+  add(
+    previousProtocolRuntimeClasspath.name,
+    "${artifactCoordinate("group")}:${artifactCoordinate("protocolArtifact")}:$previousProtocolVersion"
+  )
+  add(currentProtocolRuntimeClasspath.name, project(":protocol"))
+}
 val publishedArtifacts =
   linkedMapOf(
     ":protocol" to
@@ -522,6 +876,61 @@ val verifyPublishedJvmCompatibility =
     reportFile.set(layout.buildDirectory.file("reports/publication-jvm-compatibility.txt"))
   }
 
+val publishedArtifactExtensions =
+  publishedArtifacts.values.associate { metadata ->
+    artifactCoordinate(metadata.artifactProperty) to metadata.extension
+  } + (artifactCoordinate("gradlePluginArtifact") to "jar")
+
+val verifySourceApiClassifications =
+  tasks.register<VerifySourceApiClassifications>("verifySourceApiClassifications") {
+    group = "verification"
+    description = "Verifies that every published top-level Kotlin declaration has an API classification."
+    projectDirectory.set(layout.projectDirectory)
+    sourceFiles.from(
+      listOf(
+        "protocol/src/main/kotlin",
+        "runtime-core/src/main/kotlin",
+        "runtime-preferences/src/main/kotlin",
+        "runtime-protobuf/src/main/kotlin",
+        "runtime-shared-preferences/src/main/kotlin",
+        "gradle-plugin/src/main/kotlin"
+      ).map { path -> fileTree(path) { include("**/*.kt") } }
+    )
+    reportFile.set(layout.buildDirectory.file("reports/source-api-classifications.txt"))
+  }
+
+val dumpPublishedApiBaseline =
+  tasks.register<DumpPublishedApiBaseline>("dumpPublishedApiBaseline") {
+    group = "verification"
+    description = "Updates JVM API/ABI baselines from published JAR and AAR artifacts."
+    dependsOn(
+      publishSdkToPublicationVerificationRepository,
+      publishGradlePluginToPublicationVerificationRepository
+    )
+    repositoryDirectory.set(publicationRepositoryDirectory)
+    groupId.set(artifactCoordinate("group"))
+    publicationVersion.set(artifactCoordinate("version"))
+    artifactExtensions.set(publishedArtifactExtensions)
+    baselineDirectory.set(layout.projectDirectory.dir("api"))
+  }
+
+val verifyPublishedApiBaseline =
+  tasks.register<VerifyPublishedApiBaseline>("verifyPublishedApiBaseline") {
+    group = "verification"
+    description = "Compares published JAR and AAR JVM API/ABI with their baselines."
+    mustRunAfter(dumpPublishedApiBaseline)
+    dependsOn(
+      publishSdkToPublicationVerificationRepository,
+      publishGradlePluginToPublicationVerificationRepository
+    )
+    repositoryDirectory.set(publicationRepositoryDirectory)
+    groupId.set(artifactCoordinate("group"))
+    publicationVersion.set(artifactCoordinate("version"))
+    artifactExtensions.set(publishedArtifactExtensions)
+    baselineDirectory.set(layout.projectDirectory.dir("api"))
+    reportFile.set(layout.buildDirectory.file("reports/publication-api-baseline.txt"))
+  }
+
 val verifyPublishedSdkConsumer =
   tasks.register<Exec>("verifyPublishedSdkConsumer") {
     group = "verification"
@@ -548,6 +957,35 @@ val verifyPublishedSdkConsumer =
     )
   }
 
+val verifyProtocolWireCompatibility =
+  tasks.register<VerifyProtocolWireCompatibility>("verifyProtocolWireCompatibility") {
+    group = "verification"
+    description = "Cross-decodes old and current request/response fixtures with Protocol 0.2.0 and the current version."
+    dependsOn(":runtime-core:testDebugUnitTest", ":protocol:jar")
+    currentProtocolVersion.set(artifactCoordinate("version"))
+    previousProtocolClasspath.from(previousProtocolRuntimeClasspath)
+    currentProtocolClasspath.from(currentProtocolRuntimeClasspath)
+    previousRuntimeResponse.set(
+      layout.projectDirectory.file(
+        "gradle/wire-compatibility-fixtures/v0.2.0/runtime-snapshot-response.json"
+      )
+    )
+    previousIdeRequest.set(
+      layout.projectDirectory.file(
+        "gradle/wire-compatibility-fixtures/v0.2.0/ide-write-request.json"
+      )
+    )
+    currentRuntimeResponse.set(
+      layout.buildDirectory.file("contracts/runtime-snapshot-response.json")
+    )
+    currentIdeRequest.set(
+      layout.projectDirectory.file(
+        "gradle/wire-compatibility-fixtures/v1.0.0/ide-write-request.json"
+      )
+    )
+    reportFile.set(layout.buildDirectory.file("reports/protocol-wire-compatibility.txt"))
+  }
+
 val checkPublications =
   tasks.register("checkPublications") {
     group = "verification"
@@ -555,7 +993,9 @@ val checkPublications =
     dependsOn(
       verifyPublishedSdkMetadata,
       verifyPublishedJvmCompatibility,
-      verifyPublishedSdkConsumer
+      verifyPublishedSdkConsumer,
+      verifyPublishedApiBaseline,
+      verifySourceApiClassifications
     )
   }
 
@@ -587,6 +1027,7 @@ tasks.register("checkSdk") {
     ":runtime-shared-preferences:lint",
     ":runtime-protobuf:lint",
     checkPublications,
+    verifyProtocolWireCompatibility,
     gradle.includedBuild("gradle-plugin").task(":checkPlugin")
   )
 }

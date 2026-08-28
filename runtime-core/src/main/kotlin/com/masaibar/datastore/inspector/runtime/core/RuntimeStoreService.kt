@@ -29,6 +29,7 @@ import com.masaibar.datastore.inspector.protocol.WritePayload
 import com.masaibar.datastore.inspector.protocol.WriteResult
 import com.masaibar.datastore.inspector.protocol.WriteSuccess
 
+@InternalDataStoreInspectorApi
 public sealed class RuntimeStoreException(
   message: String
 ) : IllegalStateException(message) {
@@ -57,6 +58,7 @@ internal data class RuntimeObservableStore(
   val adapter: StoreAdapter
 )
 
+@InternalDataStoreInspectorApi
 public class RuntimeStoreService(
   private val registry: DataStoreRegistry,
   private val leases: SnapshotLeaseCache = SnapshotLeaseCache(),

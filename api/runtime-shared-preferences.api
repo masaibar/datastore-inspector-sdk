@@ -1,0 +1,295 @@
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesBackingFiles {
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesBackingFiles(java.io.File, java.lang.String);
+    descriptor: (Ljava/io/File;Ljava/lang/String;)V
+
+  public final java.util.List<java.nio.file.Path> validate();
+    descriptor: ()Ljava/util/List;
+
+  public final boolean containsEncryptedMarker();
+    descriptor: ()Z
+
+  public final void validateStandardXml();
+    descriptor: ()V
+
+  public static final java.util.List access$getENCRYPTED_MARKERS$cp();
+    descriptor: ()Ljava/util/List;
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesFileCatalog {
+  public static final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesFileCatalog INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesFileCatalog;
+  public final java.util.List<java.lang.String> scan(java.io.File);
+    descriptor: (Ljava/io/File;)Ljava/util/List;
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter implements com.masaibar.datastore.inspector.runtime.core.StoreAdapter {
+  public static final long DEFAULT_STAGE_TIMEOUT_MILLIS = 5000l;
+    descriptor: J
+  public static final long DEFAULT_COMMIT_WAIT_TIMEOUT_MILLIS = 15000l;
+    descriptor: J
+  public static final java.lang.String COMMIT_THREAD_NAME = "DataStoreInspectorSharedPreferencesCommit";
+    descriptor: Ljava/lang/String;
+  public static final java.lang.String STAGE_THREAD_NAME = "DataStoreInspectorSharedPreferencesStage";
+    descriptor: Ljava/lang/String;
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesBackingFiles, kotlin.jvm.functions.Function0<? extends android.content.SharedPreferences>, long, long);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesBackingFiles;Lkotlin/jvm/functions/Function0;JJ)V
+
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesBackingFiles, kotlin.jvm.functions.Function0, long, long, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesBackingFiles;Lkotlin/jvm/functions/Function0;JJILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public com.masaibar.datastore.inspector.protocol.StoreKind getKind();
+    descriptor: ()Lcom/masaibar/datastore/inspector/protocol/StoreKind;
+
+  public java.util.Set<com.masaibar.datastore.inspector.protocol.StoreCapability> getCapabilities();
+    descriptor: ()Ljava/util/Set;
+
+  public java.lang.Void getSchema();
+    descriptor: ()Ljava/lang/Void;
+
+  public com.masaibar.datastore.inspector.protocol.StoreSemantics getSemantics();
+    descriptor: ()Lcom/masaibar/datastore/inspector/protocol/StoreSemantics;
+
+  public java.util.Set<java.lang.String> getRequiredCapabilities();
+    descriptor: ()Ljava/util/Set;
+
+  public java.lang.Object snapshot(kotlin.coroutines.Continuation<? super com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot>);
+    descriptor: (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public java.lang.Object write(java.lang.String, com.masaibar.datastore.inspector.protocol.WriteOperation, kotlin.coroutines.Continuation<? super com.masaibar.datastore.inspector.runtime.core.AdapterWriteResult>);
+    descriptor: (Ljava/lang/String;Lcom/masaibar/datastore/inspector/protocol/WriteOperation;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public java.lang.AutoCloseable observe(kotlinx.coroutines.CoroutineScope, com.masaibar.datastore.inspector.runtime.core.StoreSnapshotObserver);
+    descriptor: (Lkotlinx/coroutines/CoroutineScope;Lcom/masaibar/datastore/inspector/runtime/core/StoreSnapshotObserver;)Ljava/lang/AutoCloseable;
+
+  public com.masaibar.datastore.inspector.protocol.GetSchemaResult schema(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lcom/masaibar/datastore/inspector/protocol/GetSchemaResult;
+
+  public void close();
+    descriptor: ()V
+
+  public com.masaibar.datastore.inspector.protocol.UnsupportedReason getRuntimeUnsupportedReason();
+    descriptor: ()Lcom/masaibar/datastore/inspector/protocol/UnsupportedReason;
+
+  public com.masaibar.datastore.inspector.protocol.ProtoSchemaRef getSchema();
+    descriptor: ()Lcom/masaibar/datastore/inspector/protocol/ProtoSchemaRef;
+
+  public static final java.lang.Object access$runBoundedStage(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter, kotlin.jvm.functions.Function0, kotlin.coroutines.Continuation);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter;Lkotlin/jvm/functions/Function0;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public static final void access$observe$publish(java.lang.Object, kotlin.jvm.internal.Ref$BooleanRef, com.masaibar.datastore.inspector.runtime.core.StoreSnapshotObserver, com.masaibar.datastore.inspector.runtime.core.AdapterObservation);
+    descriptor: (Ljava/lang/Object;Lkotlin/jvm/internal/Ref$BooleanRef;Lcom/masaibar/datastore/inspector/runtime/core/StoreSnapshotObserver;Lcom/masaibar/datastore/inspector/runtime/core/AdapterObservation;)V
+
+  public static final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesBackingFiles access$getBackingFiles$p(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesBackingFiles;
+
+  public static final void access$rejectEncryptedStore(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter;)V
+
+  public static final kotlin.jvm.functions.Function0 access$getPreferences$p(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter;)Lkotlin/jvm/functions/Function0;
+
+  public static final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$ReadSnapshot access$readSnapshot(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter, android.content.SharedPreferences);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter;Landroid/content/SharedPreferences;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$ReadSnapshot;
+
+  public static final java.lang.Object access$readSnapshotOrNull(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter, kotlin.coroutines.Continuation);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+
+  public static final java.util.concurrent.Semaphore access$getCommitLane$cp();
+    descriptor: ()Ljava/util/concurrent/Semaphore;
+
+  public static final java.util.concurrent.Semaphore access$getStageLane$cp();
+    descriptor: ()Ljava/util/concurrent/Semaphore;
+
+  public static final java.util.Set access$getENCRYPTED_MARKERS$cp();
+    descriptor: ()Ljava/util/Set;
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Conflict implements com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite {
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Conflict(com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/core/AdapterSnapshot;)V
+
+  public final com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot getCurrentSnapshot();
+    descriptor: ()Lcom/masaibar/datastore/inspector/runtime/core/AdapterSnapshot;
+
+  public final com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot component1();
+    descriptor: ()Lcom/masaibar/datastore/inspector/runtime/core/AdapterSnapshot;
+
+  public final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Conflict copy(com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/core/AdapterSnapshot;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$PreparedWrite$Conflict;
+
+  public static com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Conflict copy$default(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Conflict, com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$PreparedWrite$Conflict;Lcom/masaibar/datastore/inspector/runtime/core/AdapterSnapshot;ILjava/lang/Object;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$PreparedWrite$Conflict;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Ready implements com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite {
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Ready(android.content.SharedPreferences$Editor);
+    descriptor: (Landroid/content/SharedPreferences$Editor;)V
+
+  public final android.content.SharedPreferences$Editor getEditor();
+    descriptor: ()Landroid/content/SharedPreferences$Editor;
+
+  public final android.content.SharedPreferences$Editor component1();
+    descriptor: ()Landroid/content/SharedPreferences$Editor;
+
+  public final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Ready copy(android.content.SharedPreferences$Editor);
+    descriptor: (Landroid/content/SharedPreferences$Editor;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$PreparedWrite$Ready;
+
+  public static com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Ready copy$default(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreAdapter$PreparedWrite$Ready, android.content.SharedPreferences$Editor, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$PreparedWrite$Ready;Landroid/content/SharedPreferences$Editor;ILjava/lang/Object;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesStoreAdapter$PreparedWrite$Ready;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreCatalogProvider implements com.masaibar.datastore.inspector.runtime.core.StoreCatalogProvider {
+  public static final java.lang.String SHARED_PREFERENCES_DIRECTORY = "shared_prefs";
+    descriptor: Ljava/lang/String;
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreCatalogProvider();
+    descriptor: ()V
+
+  public java.lang.String getProviderId();
+    descriptor: ()Ljava/lang/String;
+
+  public java.util.Set<java.lang.String> getRequiredCapabilities();
+    descriptor: ()Ljava/util/Set;
+
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreCatalogProvider(java.io.File, kotlin.jvm.functions.Function1<? super java.lang.String, ? extends android.content.SharedPreferences>);
+    descriptor: (Ljava/io/File;Lkotlin/jvm/functions/Function1;)V
+
+  public com.masaibar.datastore.inspector.runtime.core.StoreCatalogProvider initialize(android.content.Context);
+    descriptor: (Landroid/content/Context;)Lcom/masaibar/datastore/inspector/runtime/core/StoreCatalogProvider;
+
+  public java.util.List<com.masaibar.datastore.inspector.runtime.core.CatalogStoreCandidate> scan(java.lang.String);
+    descriptor: (Ljava/lang/String;)Ljava/util/List;
+
+  public void close();
+    descriptor: ()V
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesStoreCatalogProviderKt {
+  public static final com.masaibar.datastore.inspector.protocol.StoreSemantics getSHARED_PREFERENCES_SEMANTICS();
+    descriptor: ()Lcom/masaibar/datastore/inspector/protocol/StoreSemantics;
+
+  public static final java.util.Set<com.masaibar.datastore.inspector.protocol.StoreCapability> getSHARED_PREFERENCES_CAPABILITIES();
+    descriptor: ()Ljava/util/Set;
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Map implements com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element {
+  public static final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Map INSTANCE;
+    descriptor: Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Map;
+  public java.lang.String getTag();
+    descriptor: ()Ljava/lang/String;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Scalar implements com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element {
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Scalar(java.lang.String);
+    descriptor: (Ljava/lang/String;)V
+
+  public java.lang.String getTag();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.lang.String component1();
+    descriptor: ()Ljava/lang/String;
+
+  public final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Scalar copy(java.lang.String);
+    descriptor: (Ljava/lang/String;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Scalar;
+
+  public static com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Scalar copy$default(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Scalar, java.lang.String, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Scalar;Ljava/lang/String;ILjava/lang/Object;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Scalar;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set implements com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element {
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set(java.util.Set<java.lang.String>);
+    descriptor: (Ljava/util/Set;)V
+
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set(java.util.Set, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final java.util.Set<java.lang.String> getValues();
+    descriptor: ()Ljava/util/Set;
+
+  public java.lang.String getTag();
+    descriptor: ()Ljava/lang/String;
+
+  public final java.util.Set<java.lang.String> component1();
+    descriptor: ()Ljava/util/Set;
+
+  public final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set copy(java.util.Set<java.lang.String>);
+    descriptor: (Ljava/util/Set;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Set;
+
+  public static com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set copy$default(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set, java.util.Set, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Set;Ljava/util/Set;ILjava/lang/Object;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$Set;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$Set();
+    descriptor: ()V
+}
+public final class com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$StringValue implements com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element {
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$StringValue(boolean, java.lang.StringBuilder);
+    descriptor: (ZLjava/lang/StringBuilder;)V
+
+  public com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$StringValue(boolean, java.lang.StringBuilder, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    descriptor: (ZLjava/lang/StringBuilder;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+
+  public final boolean getInSet();
+    descriptor: ()Z
+
+  public final java.lang.StringBuilder getText();
+    descriptor: ()Ljava/lang/StringBuilder;
+
+  public java.lang.String getTag();
+    descriptor: ()Ljava/lang/String;
+
+  public final boolean component1();
+    descriptor: ()Z
+
+  public final java.lang.StringBuilder component2();
+    descriptor: ()Ljava/lang/StringBuilder;
+
+  public final com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$StringValue copy(boolean, java.lang.StringBuilder);
+    descriptor: (ZLjava/lang/StringBuilder;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$StringValue;
+
+  public static com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$StringValue copy$default(com.masaibar.datastore.inspector.runtime.sharedpreferences.SharedPreferencesXmlValidator$Element$StringValue, boolean, java.lang.StringBuilder, int, java.lang.Object);
+    descriptor: (Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$StringValue;ZLjava/lang/StringBuilder;ILjava/lang/Object;)Lcom/masaibar/datastore/inspector/runtime/sharedpreferences/SharedPreferencesXmlValidator$Element$StringValue;
+
+  public java.lang.String toString();
+    descriptor: ()Ljava/lang/String;
+
+  public int hashCode();
+    descriptor: ()I
+
+  public boolean equals(java.lang.Object);
+    descriptor: (Ljava/lang/Object;)Z
+}
