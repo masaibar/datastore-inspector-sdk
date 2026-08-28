@@ -60,7 +60,7 @@ while IFS= read -r -d '' tracked_path; do
   fi
 done < <(git ls-files -z)
 
-readonly forbidden_content_pattern='(/Users|/home)/[^/[:space:]]+|(^|[^[:alnum:]_])[A-Za-z]:[/\\]|IdeaProjects|/Applications/|/Library/Java/JavaVirtualMachines/|/opt/homebrew/|/Volumes/|/(private/)?tmp/|/(private/)?var/folders/|datastore-inspector-ide|masaibar/datastore-inspector@|github\.com/masaibar/datastore-inspector(/|$)'
+readonly forbidden_content_pattern='(/Users|/home)/[^/[:space:]]+|(^|[^[:alnum:]_])[A-Za-z]:[/\\]|IdeaProjects|/Applications/|/Library/Java/JavaVirtualMachines/|/opt/homebrew/|/Volumes/|/(private/)?tmp/|/(private/)?var/folders/|datastore-inspector-ide|(^|[^[:alnum:]_.-])masaibar/datastore-inspector(\.git)?([^[:alnum:]_.-]|$)'
 assert_no_tracked_content_match \
   "Published source contains a private repository reference or a machine-specific path." \
   -a -n -E "$forbidden_content_pattern" -- . \
