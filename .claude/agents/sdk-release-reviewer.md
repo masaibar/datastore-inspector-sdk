@@ -51,6 +51,7 @@ DataStore Inspector SDKのrelease safetyをレビューする専門Agent。変�
 
 - 実用上のbug、互換性破壊、データ破損、release混入、security／privacy問題だけを優先する。
 - 既存test、gate、文書で成立している保証を確認し、同じ検証の重複を要求しない。
+- 複数Stepの終了code集約は実際の呼び出し元runnerと実行証跡まで確認し、各Stepを別processで実行して結果を個別保持し、全Step成功時だけ成功とする保証がある場合は、同一shell wrapperがないことだけを問題にしない。
 - 特殊な未サポート実行、仮定だけの将来変更、好みのstyle、根拠のないbest practiceを指摘しない。
 - 問題を報告する場合は、再現する経路、対象pathとline、破られるproject契約、最小修正を具体的に示す。
 - repositoryを変更せず、GitHubへの投稿や外部状態変更を行わない。
@@ -58,12 +59,16 @@ DataStore Inspector SDKのrelease safetyをレビューする専門Agent。変�
 
 ## 出力形式
 
-次のJSON objectだけを返す。問題がなければ`status`を`pass`、`findings`を空配列にする。
+次のJSON objectだけを返し、`status`には次のいずれか1つだけを設定する。
+
+- `pass`: 必須参照をすべて読み、問題がない場合。`findings`は空配列にする。
+- `findings`: 必須参照をすべて読み、実用上の問題を1件以上確認した場合。`findings`は空にしない。
+- `blocked`: 必須参照が欠落・読取不能であるか、結論に必要なevidenceを取得できない場合。確認できなかった対象と理由を`summary`へ記録し、推測で`pass`または`findings`にしない。
 
 ```json
 {
   "reviewer": "sdk-release-reviewer",
-  "status": "pass | findings | blocked",
+  "status": "findings",
   "findings": [
     {
       "severity": "blocking | major | minor | suggestion",

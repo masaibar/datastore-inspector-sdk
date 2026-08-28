@@ -854,7 +854,7 @@ val checkPublications =
 
 tasks.register("checkSdk") {
   group = "verification"
-  description = "SDK全体のtest、lint、debug統合、release分離を検証します。"
+  description = "Verifies SDK tests, lint, debug integration, and release isolation."
   dependsOn(
     "ktlintCheck",
     subprojects.map { "${it.path}:ktlintCheck" },
@@ -880,7 +880,6 @@ tasks.register("checkSdk") {
     ":runtime-shared-preferences:lint",
     ":runtime-protobuf:lint",
     checkPublications,
-    verifyProtocolWireCompatibility,
-    gradle.includedBuild("gradle-plugin").task(":checkPlugin")
+    verifyProtocolWireCompatibility
   )
 }

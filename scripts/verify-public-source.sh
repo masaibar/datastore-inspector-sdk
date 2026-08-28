@@ -45,10 +45,19 @@ while IFS= read -r -d '' tracked_path; do
   fi
 done < <(git ls-files -z)
 
-readonly forbidden_content_pattern='(/Users/[^/[:space:]]+/|/home/[^/[:space:]]+/|[A-Za-z]:\\Users\\|IdeaProjects|/private/tmp/|datastore-inspector-ide|masaibar/datastore-inspector@|github\.com/masaibar/datastore-inspector(/|$))'
+readonly forbidden_content_pattern='(/Users/[^/[:space:]]+/|/home/[^/[:space:]]+/|(^|[^[:alnum:]_])[A-Za-z]:\\|IdeaProjects|/Applications/|/Library/Java/JavaVirtualMachines/|/opt/homebrew/|/Volumes/|/(private/)?tmp/|/(private/)?var/folders/|datastore-inspector-ide|masaibar/datastore-inspector@|github\.com/masaibar/datastore-inspector(/|$))'
 if git grep -I -n -E "$forbidden_content_pattern" -- . \
   ':(exclude)scripts/verify-public-source.sh'; then
   fail "公開対象にprivate repository参照または個人環境pathが含まれています。"
+fi
+
+if git log --all --format='%H' -G"$forbidden_content_pattern" -- . \
+  ':(exclude)scripts/verify-public-source.sh' | grep . >/dev/null; then
+  fail "到達可能なGit履歴にprivate repository参照または個人環境pathが含まれています。"
+fi
+
+if git log --all --format='%B' | grep -E "$forbidden_content_pattern" >/dev/null; then
+  fail "到達可能なGit commit messageにprivate repository参照または個人環境pathが含まれています。"
 fi
 
 readonly unqualified_work_item_pattern='(issue|pull request|pr)[[:space:]]*#[0-9]+'
