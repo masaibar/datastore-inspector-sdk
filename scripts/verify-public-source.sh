@@ -18,6 +18,21 @@ require_tracked_file() {
     fail "公開に必要なtracked fileがありません: $path"
 }
 
+assert_no_tracked_content_match() {
+  local failure_message="$1"
+  shift
+
+  local grep_status
+  if git grep "$@"; then
+    fail "$failure_message"
+  else
+    grep_status=$?
+    if ((grep_status != 1)); then
+      fail "Unable to inspect tracked content (git grep exited with status $grep_status)."
+    fi
+  fi
+}
+
 for required_file in \
   LICENSE \
   README.md \
@@ -45,30 +60,33 @@ while IFS= read -r -d '' tracked_path; do
   fi
 done < <(git ls-files -z)
 
-readonly forbidden_content_pattern='(/Users/[^/[:space:]]+/|/home/[^/[:space:]]+/|(^|[^[:alnum:]_])[A-Za-z]:\\|IdeaProjects|/Applications/|/Library/Java/JavaVirtualMachines/|/opt/homebrew/|/Volumes/|/(private/)?tmp/|/(private/)?var/folders/|datastore-inspector-ide|masaibar/datastore-inspector@|github\.com/masaibar/datastore-inspector(/|$))'
-if git grep -I -n -E "$forbidden_content_pattern" -- . \
-  ':(exclude)scripts/verify-public-source.sh'; then
-  fail "公開対象にprivate repository参照または個人環境pathが含まれています。"
+readonly forbidden_content_pattern='(/Users|/home)/[^/[:space:]]+|(^|[^[:alnum:]_])[A-Za-z]:[/\\]|IdeaProjects|/Applications/|/Library/Java/JavaVirtualMachines/|/opt/homebrew/|/Volumes/|/(private/)?tmp/|/(private/)?var/folders/|datastore-inspector-ide|masaibar/datastore-inspector@|github\.com/masaibar/datastore-inspector(/|$)'
+assert_no_tracked_content_match \
+  "Published source contains a private repository reference or a machine-specific path." \
+  -a -n -E "$forbidden_content_pattern" -- . \
+  ':(exclude)scripts/verify-public-source.sh'
+
+history_matches="$(
+  git log --all --text --format='%H' -G"$forbidden_content_pattern" -- . \
+    ':(exclude)scripts/verify-public-source.sh'
+)" || fail "Unable to inspect reachable Git file history."
+if [[ -n "$history_matches" ]]; then
+  fail "Reachable Git file history contains a private repository reference or a machine-specific path."
 fi
 
-if git log --all --format='%H' -G"$forbidden_content_pattern" -- . \
-  ':(exclude)scripts/verify-public-source.sh' | grep . >/dev/null; then
-  fail "到達可能なGit履歴にprivate repository参照または個人環境pathが含まれています。"
-fi
-
-if git log --all --format='%B' | grep -E "$forbidden_content_pattern" >/dev/null; then
-  fail "到達可能なGit commit messageにprivate repository参照または個人環境pathが含まれています。"
+commit_messages="$(git log --all --format='%B')" || fail "Unable to inspect reachable Git commit messages."
+if [[ "$commit_messages" =~ $forbidden_content_pattern ]]; then
+  fail "Reachable Git commit messages contain a private repository reference or a machine-specific path."
 fi
 
 readonly unqualified_work_item_pattern='(issue|pull request|pr)[[:space:]]*#[0-9]+'
-if git grep -I -i -n -E "$unqualified_work_item_pattern" -- . \
-  ':(exclude)scripts/verify-public-source.sh'; then
-  fail "公開対象に出所を確認できないIssue／PR identifierが含まれています。"
-fi
+assert_no_tracked_content_match \
+  "Published source contains an unqualified issue or pull request identifier." \
+  -a -i -n -E "$unqualified_work_item_pattern" -- . \
+  ':(exclude)scripts/verify-public-source.sh'
 
-if git grep -I -n -E \
-  -e '-----BEGIN (OPENSSH|RSA|DSA|EC|PGP) PRIVATE KEY-----' -- .; then
-  fail "公開対象にprivate keyらしき内容が含まれています。"
-fi
+assert_no_tracked_content_match \
+  "Published source contains content resembling a private key." \
+  -a -n -E -e '-----BEGIN (OPENSSH|RSA|DSA|EC|PGP) PRIVATE KEY-----' -- .
 
 printf '%s\n' "公開source境界を確認しました。"

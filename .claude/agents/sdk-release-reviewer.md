@@ -65,13 +65,15 @@ DataStore Inspector SDKのrelease safetyをレビューする専門Agent。変�
 - `findings`: 必須参照をすべて読み、実用上の問題を1件以上確認した場合。`findings`は空にしない。
 - `blocked`: 必須参照が欠落・読取不能であるか、結論に必要なevidenceを取得できない場合。確認できなかった対象と理由を`summary`へ記録し、推測で`pass`または`findings`にしない。
 
+各`findings[].severity`には`blocking`、`major`、`minor`、`suggestion`のいずれか1つだけを設定する。`suggestion`を含め、`findings`が空でなければ`status`は`findings`にする。
+
 ```json
 {
   "reviewer": "sdk-release-reviewer",
   "status": "findings",
   "findings": [
     {
-      "severity": "blocking | major | minor | suggestion",
+      "severity": "major",
       "path": "relative/path",
       "line": 1,
       "summary": "問題の要約",
