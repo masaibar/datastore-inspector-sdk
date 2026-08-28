@@ -112,7 +112,7 @@ owner/descriptor pairs not present in the supported table are never guessed.
 observes a basename only when normal DataStore creation invokes the producer. A Serializer for a
 Proto `MessageLite` is not wrapped and is handed to the existing Proto adapter.
 
-A Custom Store whose actual Serializer cannot be captured through a supported creation path uses `CUSTOM_CREATION_ROUTE_UNSUPPORTED` or `CUSTOM_SERIALIZER_CAPTURE_UNAVAILABLE`. `registerDataStoreInspectorFallback` registers the same instance held by the application; it does not make an uncaptured Serializer contract guessable.
+A Custom Store whose actual Serializer cannot be captured through a supported creation path uses `CUSTOM_CREATION_ROUTE_UNSUPPORTED` or `CUSTOM_SERIALIZER_CAPTURE_UNAVAILABLE`. `registerDataStoreInspectorFallback` registers the same instance held by the application; it does not make an uncaptured Serializer contract guessable. Callers must opt in with `@OptIn(ExperimentalDataStoreInspectorApi::class)`.
 
 ## Write and timeout boundaries
 
