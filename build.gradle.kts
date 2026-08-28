@@ -4,6 +4,9 @@ import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 import org.gradle.api.DefaultTask
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.LibraryElements
+import org.gradle.api.attributes.Usage
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
@@ -19,6 +22,7 @@ import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
+import org.jetbrains.kotlin.gradle.dsl.KotlinBaseExtension
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import java.io.File
 import java.io.InputStream
@@ -540,6 +544,25 @@ subprojects {
   }
 }
 
+val explicitApiProjects =
+  setOf(
+    ":protocol",
+    ":runtime-core",
+    ":runtime-preferences",
+    ":runtime-protobuf",
+    ":runtime-shared-preferences"
+  )
+subprojects {
+  if (path in explicitApiProjects) {
+    pluginManager.withPlugin("org.jetbrains.kotlin.jvm") {
+      extensions.configure<KotlinBaseExtension> { explicitApi() }
+    }
+    pluginManager.withPlugin("com.android.library") {
+      extensions.configure<KotlinBaseExtension> { explicitApi() }
+    }
+  }
+}
+
 val publicRepositoryUrl = "https://github.com/masaibar/datastore-inspector-sdk"
 val publicationRepositoryDirectory = layout.buildDirectory.dir("publication-repository")
 val previousProtocolVersion = "0.2.0"
@@ -547,11 +570,21 @@ val previousProtocolRuntimeClasspath =
   configurations.create("previousProtocolRuntimeClasspath") {
     isCanBeConsumed = false
     isCanBeResolved = true
+    attributes {
+      attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+      attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+      attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+    }
   }
 val currentProtocolRuntimeClasspath =
   configurations.create("currentProtocolRuntimeClasspath") {
     isCanBeConsumed = false
     isCanBeResolved = true
+    attributes {
+      attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage.JAVA_RUNTIME))
+      attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.LIBRARY))
+      attribute(LibraryElements.LIBRARY_ELEMENTS_ATTRIBUTE, objects.named(LibraryElements.JAR))
+    }
   }
 dependencies {
   add(

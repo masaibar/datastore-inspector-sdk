@@ -25,8 +25,6 @@ reviews:
     ignore_title_keywords:
       - "WIP"
       - "DO NOT MERGE"
-      # Use only for release/* -> main synchronization PRs already reviewed on the release branch.
-      - "[skip review]"
 
 chat:
   auto_reply: true

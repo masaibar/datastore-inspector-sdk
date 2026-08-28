@@ -69,6 +69,7 @@ base {
 
 kotlin {
   jvmToolchain(21)
+  explicitApi()
   compilerOptions {
     jvmTarget.set(JvmTarget.JVM_17)
     freeCompilerArgs.add("-Xjdk-release=17")
