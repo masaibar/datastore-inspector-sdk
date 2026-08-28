@@ -5,7 +5,7 @@
 ## 初期版の対応範囲
 
 - Android Studio Panda 4 Patch 1（`AI-253.32098.37.2534.15336583`）
-- Android Studio Quail 2（`AI-261.25134.95.2612.15822958`）
+- Android Studio Quail 3 Patch 1（`AI-261.26222.65.2613.16025427`）
 - consumerのGradle JVMはJDK 17、SDKのsource build／releaseはJDK 21
 - 公開Gradle Plugin／Runtimeのbytecode targetはJava 17、ProtocolはJava 11
 - 検証基準のGradle 9.6.1、AGP 9.2.1
@@ -33,7 +33,7 @@
 - 対応済み作成call siteを通らないCustom DataStore、実instance／Serializerを取得できない経路
 - Custom serializerのraw binaryを推測または直接編集すること
 
-自動計装対象外のAndroid経路には、利用者が保持する同じDataStore instanceを渡すdebug専用`registerFallback`を用意しています。sampleと初期保証delegate経路はfallbackを使いません。
+自動計装対象外のAndroid経路には、利用者が保持する同じDataStore instanceを渡すdebug専用`registerDataStoreInspectorFallback`を用意しています。呼び出し側は`@OptIn(ExperimentalDataStoreInspectorApi::class)`でexperimental APIの利用を明示します。sampleと初期保証delegate経路はfallbackを使いません。
 
 ## 安全境界
 

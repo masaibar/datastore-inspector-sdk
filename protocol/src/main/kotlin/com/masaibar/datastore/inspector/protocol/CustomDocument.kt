@@ -9,6 +9,7 @@ import kotlinx.serialization.Serializable
  * The document limit is intentionally lower than [ProtocolLimits.AUTHENTICATED_FRAME_BYTES]
  * because the document must still fit in an escaped Protocol JSON envelope.
  */
+@InternalDataStoreInspectorProtocolApi
 public object CustomDocumentLimits {
   public const val MAX_DOCUMENT_UTF8_BYTES: Int = 1024 * 1024
   public const val MAX_JSON_DEPTH: Int = 64
@@ -20,12 +21,14 @@ public object CustomDocumentLimits {
 }
 
 @Serializable(with = CustomDocumentFormatSerializer::class)
+@InternalDataStoreInspectorProtocolApi
 public enum class CustomDocumentFormat(public val wireName: String) {
   JSON("json"),
   TEXT("text"),
   UNKNOWN("unknown")
 }
 
+@InternalDataStoreInspectorProtocolApi
 public object CustomDocumentFormatSerializer : StableEnumSerializer<CustomDocumentFormat>(
   serialName = "CustomDocumentFormat",
   values = CustomDocumentFormat.entries,
@@ -35,6 +38,7 @@ public object CustomDocumentFormatSerializer : StableEnumSerializer<CustomDocume
 
 @Serializable
 @SerialName("custom_document")
+@InternalDataStoreInspectorProtocolApi
 public data class CustomDocumentPayload(
   val projectionId: String,
   val schemaVersion: Int,
@@ -44,6 +48,7 @@ public data class CustomDocumentPayload(
 
 @Serializable
 @SerialName("replace_custom_document")
+@InternalDataStoreInspectorProtocolApi
 public data class ReplaceCustomDocument(
   val projectionId: String,
   val schemaVersion: Int,
@@ -58,6 +63,7 @@ public data class ReplaceCustomDocument(
  * exception detail, value, document, raw bytes, or backing path.
  */
 @Serializable(with = CustomStoreReasonCodeSerializer::class)
+@InternalDataStoreInspectorProtocolApi
 public enum class CustomStoreReasonCode(public val wireName: String) {
   CUSTOM_OUTPUT_NOT_UTF8("CUSTOM_OUTPUT_NOT_UTF8"),
   CUSTOM_OUTPUT_NOT_JSON("CUSTOM_OUTPUT_NOT_JSON"),
@@ -85,6 +91,7 @@ public enum class CustomStoreReasonCode(public val wireName: String) {
   }
 }
 
+@InternalDataStoreInspectorProtocolApi
 public object CustomStoreReasonCodeSerializer : StableEnumSerializer<CustomStoreReasonCode>(
   serialName = "CustomStoreReasonCode",
   values = CustomStoreReasonCode.entries,
@@ -95,6 +102,7 @@ public object CustomStoreReasonCodeSerializer : StableEnumSerializer<CustomStore
 /**
  * A bounded and non-sensitive explanation of why custom document validation failed.
  */
+@InternalDataStoreInspectorProtocolApi
 public enum class CustomDocumentValidationFailure {
   MALFORMED_UTF16,
   DOCUMENT_TOO_LARGE,
@@ -114,6 +122,7 @@ public enum class CustomDocumentValidationFailure {
  *
  * The offending document and parser internals are never retained as a cause or message.
  */
+@InternalDataStoreInspectorProtocolApi
 public class CustomDocumentValidationException(
   public val failure: CustomDocumentValidationFailure
 ) : IllegalArgumentException(failure.safeMessage())
@@ -121,6 +130,7 @@ public class CustomDocumentValidationException(
 /**
  * Strict validation shared by Runtime and inspection client for Custom Store documents.
  */
+@InternalDataStoreInspectorProtocolApi
 public object CustomDocumentValidation {
   @Throws(CustomDocumentValidationException::class)
   public fun validate(format: CustomDocumentFormat, document: String) {

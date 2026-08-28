@@ -1,7 +1,8 @@
+@file:OptIn(ExperimentalDataStoreInspectorApi::class)
+
 package com.masaibar.datastore.inspector.runtime.core
 
 import androidx.datastore.core.DataStore
-import com.masaibar.datastore.inspector.protocol.CustomDocumentFormat
 import com.masaibar.datastore.inspector.protocol.CustomDocumentLimits
 import com.masaibar.datastore.inspector.protocol.CustomStoreReasonCode
 import kotlinx.coroutines.CancellationException
@@ -122,12 +123,19 @@ internal class ObservedStoreName {
   }
 }
 
+@ExperimentalDataStoreInspectorApi
+public enum class InspectorCustomDocumentFormat {
+  JSON,
+  TEXT
+}
+
+@ExperimentalDataStoreInspectorApi
 public interface InspectorCustomCodec<T> {
   /** Runtimeが`fallback:<codecId>:<schemaVersion>`へ名前空間化する安全なASCII識別子です。 */
   public val codecId: String
   public val schemaVersion: Int
     get() = 1
-  public val format: CustomDocumentFormat
+  public val format: InspectorCustomDocumentFormat
 
   public fun encode(value: T): String
 
@@ -137,12 +145,14 @@ public interface InspectorCustomCodec<T> {
   public fun validate(value: T): Unit = Unit
 }
 
+@ExperimentalDataStoreInspectorApi
 public data class InspectorCustomCodecBinding<T : Any>(
   val serializerClass: Class<*>,
   val valueClass: Class<T>,
   val codec: InspectorCustomCodec<T>
 )
 
+@ExperimentalDataStoreInspectorApi
 public interface InspectorCustomCodecBindingProvider {
   public val providerId: String
 
@@ -152,6 +162,7 @@ public interface InspectorCustomCodecBindingProvider {
 /**
  * Gradle Pluginがdebug sourceへ生成するbinding providerから利用する型安全なDSLです。
  */
+@ExperimentalDataStoreInspectorApi
 public class InspectorCustomCodecBindingsBuilder {
   private val values = mutableListOf<InspectorCustomCodecBinding<*>>()
 
@@ -166,6 +177,7 @@ public class InspectorCustomCodecBindingsBuilder {
   public fun build(): List<InspectorCustomCodecBinding<*>> = values.toList()
 }
 
+@ExperimentalDataStoreInspectorApi
 public fun inspectorCustomCodecBindings(block: InspectorCustomCodecBindingsBuilder.() -> Unit): List<InspectorCustomCodecBinding<*>> =
   InspectorCustomCodecBindingsBuilder().apply(block).build()
 
@@ -232,7 +244,6 @@ private fun InspectorCustomCodecBinding<*>.isValid(): Boolean {
   val projectionId = fallbackProjectionId(id, codec.schemaVersion)
   return id.matches(CODEC_ID_PATTERN) &&
     codec.schemaVersion > 0 &&
-    codec.format != CustomDocumentFormat.UNKNOWN &&
     projectionId.encodeToByteArray().size <=
     CustomDocumentLimits.MAX_PROJECTION_ID_UTF8_BYTES
 }

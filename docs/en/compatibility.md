@@ -5,7 +5,7 @@ English | [日本語](../compatibility.md)
 ## Initial support scope
 
 - Android Studio Panda 4 Patch 1 (`AI-253.32098.37.2534.15336583`)
-- Android Studio Quail 2 (`AI-261.25134.95.2612.15822958`)
+- Android Studio Quail 3 Patch 1 (`AI-261.26222.65.2613.16025427`)
 - JDK 17 for a consumer's Gradle JVM, and JDK 21 for SDK source builds and releases
 - Java 17 bytecode for the published Gradle Plugin and Runtime, and Java 11 bytecode for Protocol
 - Gradle 9.6.1 and AGP 9.2.1 as the validated reference toolchain
@@ -39,9 +39,7 @@ English | [日本語](../compatibility.md)
   from which the actual instance or Serializer cannot be obtained
 - Guessing or directly editing a Custom Serializer's raw binary representation
 
-For Android paths outside automatic instrumentation, a debug-only `registerFallback` API accepts
-the same DataStore instance held by the application. The sample and initially guaranteed delegate
-paths do not use this fallback.
+For Android paths outside automatic instrumentation, a debug-only `registerDataStoreInspectorFallback` API accepts the same DataStore instance held by the application. Callers must opt in with `@OptIn(ExperimentalDataStoreInspectorApi::class)`. The sample and initially guaranteed delegate paths do not use this fallback.
 
 ## Safety boundaries
 

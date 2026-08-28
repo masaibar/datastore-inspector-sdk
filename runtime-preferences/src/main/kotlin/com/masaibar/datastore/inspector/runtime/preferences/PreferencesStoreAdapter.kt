@@ -35,6 +35,7 @@ import com.masaibar.datastore.inspector.runtime.core.AdapterObservation
 import com.masaibar.datastore.inspector.runtime.core.AdapterResolution
 import com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot
 import com.masaibar.datastore.inspector.runtime.core.AdapterWriteResult
+import com.masaibar.datastore.inspector.runtime.core.InternalDataStoreInspectorApi
 import com.masaibar.datastore.inspector.runtime.core.PreferencesSnapshotEncoder
 import com.masaibar.datastore.inspector.runtime.core.StoreAdapter
 import com.masaibar.datastore.inspector.runtime.core.StoreAdapterFactory
@@ -46,6 +47,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+@InternalDataStoreInspectorApi
 public class PreferencesStoreAdapterFactory : StoreAdapterFactory {
   override val providerId: String = "preferences-v1"
 
@@ -57,7 +59,7 @@ public class PreferencesStoreAdapterFactory : StoreAdapterFactory {
   }
 }
 
-public class PreferencesStoreAdapter(
+internal class PreferencesStoreAdapter(
   private val store: DataStore<Preferences>
 ) : StoreAdapter {
   override val kind: StoreKind = StoreKind.PREFERENCES

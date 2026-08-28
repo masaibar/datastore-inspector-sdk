@@ -18,6 +18,7 @@ import androidx.datastore.dataStore as createDataStoreDelegate
 import androidx.datastore.deviceProtectedDataStore as createDeviceProtectedDataStoreDelegate
 
 /** ASMがtyped `dataStore` delegate呼び出しを置き換えるdebug Runtime bridgeです。 */
+@InternalDataStoreInspectorApi
 public object TypedDataStoreDelegateBridge {
   @JvmStatic
   public fun <T> dataStore(

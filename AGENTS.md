@@ -12,7 +12,7 @@
 
 - [Never] password、API key、access token、private key、signing material、credential を含む設定、公開許可のない endpoint／host 情報を追加しない。Git は削除前の内容も履歴へ保持し、working tree から消すだけでは漏えいを解消できないためです。
 - [Never] 公開許可のない repository／project の名称、URL、Issue／PR identifier、checkout path、source／artifact への参照を追加しない。直接の秘密値を含まなくても、公開物から非公開資産の存在、配置、開発履歴を辿れるためです。
-- [Never] 個人の home directory を含む絶対 path、端末 serial、内部 IP／hostname、公開許可のない個人情報・顧客データ・source・文書を追加しない。公開 repository の clone や artifact から個人環境や非公開資産を推測できないようにするためです。
+- [Never] 個人の home directory、local checkout、local application／JDK／SDK installation、temporary directory、mounted volume を指す machine 固有の絶対 path、端末 serial、内部 IP／hostname、公開許可のない個人情報・顧客データ・source・文書を追加しない。公開 repository の clone や artifact から個人環境や非公開資産を推測できないようにするためです。
 - [Must] local／CI で必要な秘密値は environment variable、system property、secret store、または `.gitignore` 対象の local file から注入し、repository には値を含まない placeholder や `.example` だけを置く。再現可能な設定手順と秘密値を分離するためです。
 - [Must] sample、test fixture、文書では明らかな dummy value を使い、実在 credential と同じ値や live credential と誤認される形式を使わない。例示や test data からの誤漏えいを防ぐためです。
 - [Never] 秘密値を command output、log、test report、screenshot、review artifact、agent への入力へ展開しない。調査時も値を redact し、漏えい経路を増やさないためです。

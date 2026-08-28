@@ -1,5 +1,8 @@
+@file:OptIn(InternalDataStoreInspectorProtocolApi::class)
+
 package com.masaibar.datastore.inspector.sample
 
+import com.masaibar.datastore.inspector.protocol.InternalDataStoreInspectorProtocolApi
 import com.masaibar.datastore.inspector.protocol.ProtoRaw
 import com.masaibar.datastore.inspector.protocol.ProtoSchemaRef
 import com.masaibar.datastore.inspector.protocol.ProtocolJson

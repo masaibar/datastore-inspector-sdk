@@ -12,11 +12,11 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.security.MessageDigest
 
-public data class VerifiedSchemaIndex(
+internal data class VerifiedSchemaIndex(
   val entries: List<VerifiedSchemaEntry>
 )
 
-public data class VerifiedSchemaEntry(
+internal data class VerifiedSchemaEntry(
   val generatedJvmClassName: String,
   val rootMessageFullName: String,
   val descriptorDigestSha256: String,
@@ -45,7 +45,7 @@ public data class VerifiedSchemaEntry(
       descriptorBytes.contentHashCode()
 }
 
-public object SchemaIndexConsumer {
+internal object SchemaIndexConsumer {
   private const val MAX_DESCRIPTOR_BYTES: Int = 8 * 1024 * 1024
   private val allowedIndexKeys = setOf("formatVersion", "entries")
   private val allowedEntryKeys =

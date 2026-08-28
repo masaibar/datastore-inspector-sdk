@@ -1,4 +1,7 @@
-@file:OptIn(kotlinx.serialization.ExperimentalSerializationApi::class)
+@file:OptIn(
+  kotlinx.serialization.ExperimentalSerializationApi::class,
+  ExperimentalDataStoreInspectorApi::class
+)
 
 package com.masaibar.datastore.inspector.runtime.core
 
@@ -659,7 +662,7 @@ private data class AlternateDualProjectionDocument(
 
 private object AlternateDualProjectionCodec : InspectorCustomCodec<DualProjectionValue> {
   override val codecId: String = "alternate-dual-projection"
-  override val format: CustomDocumentFormat = CustomDocumentFormat.JSON
+  override val format: InspectorCustomDocumentFormat = InspectorCustomDocumentFormat.JSON
 
   override fun encode(value: DualProjectionValue): String =
     Json.encodeToString(

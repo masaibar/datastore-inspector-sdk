@@ -6,70 +6,45 @@
 
 <p align="center">English | <a href="README.ja.md">日本語</a></p>
 
-**Inspect and update SharedPreferences and DataStore values in a running Android app—right from Android Studio.** Spend less time adding temporary logs, building throwaway debug screens, and rebuilding just to verify application state.
+**Inspect and edit SharedPreferences and DataStore values in a running Android app from Android Studio.** Reduce temporary logs, throwaway debug screens, and rebuilds used only to inspect state.
 
-[Stetho](https://facebook.github.io/stetho/) and [Flipper](https://github.com/facebook/flipper) made it natural to peek inside a running Android app. Both projects are now archived, but the need for that fast feedback loop remains—especially as application state moves into SharedPreferences and Jetpack DataStore. DataStore Inspector was created to bring that workflow to modern Android state without requiring one-off debugging code.
+DataStore Inspector was born from a desire to bring back the excellent developer experience once offered by [Stetho](https://facebook.github.io/stetho/) and [Flipper](https://github.com/facebook/flipper): inspecting and updating values in a running app, now for SharedPreferences and Jetpack DataStore.
 
-Add this SDK to your Android application and connect with the DataStore Inspector plugin for Android Studio to use Live Mode:
+- Automatically discover supported Preferences DataStore and persisted SharedPreferences instances ([support scope](docs/en/compatibility.md))
+- Browse, search, and edit supported Preferences, SharedPreferences, and registered Proto DataStore instances
+- Track supported store changes and update the application's actual instances through official APIs
 
-- Discover Preferences DataStore and persisted SharedPreferences without Inspector-specific setup
-- Browse and search stores, including registered Proto DataStore instances, and inspect current values
-- Write supported values back to the running app and follow store changes as they happen
-- Mutate the actual store instance through official APIs instead of bypassing DataStore transactions
+The SDK is added only to supported debuggable variants and leaves release variants untouched. It does not send store keys, values, or schemas to external servers, and adds no internet communication, telemetry, or Android network permission. Device communication is limited to an authenticated local connection over ADB forwarding.
 
-The SDK is added only to supported debuggable variants. Release variants remain untouched.
+## Install
 
-Store keys, values, and schemas are never sent to an external server. Communication is limited to an authenticated local connection between the device and Android Studio over ADB forwarding. The SDK adds no internet communication, telemetry, or Android network permission.
+### Use an AI coding agent
 
-This SDK is open source so that teams can inspect the code they add to their applications. What the SDK injects into debug builds, what runs inside the application process, how it accesses stores, and what it keeps out of release builds are all visible. This transparency lets you decide whether the SDK is appropriate for your own application instead of asking you to trust a black box.
-
-This repository contains the application-side SDK added to consumer debug builds and executed inside the application process. The Android Studio UI and inspection client are provided by the IDE plugin.
-
-## Modules
-
-- `gradle-plugin`: dependency injection, schema generation, and ASM instrumentation for debuggable variants
-- `protocol`: versioned protocol shared by the Android Runtime and inspection clients
-- `runtime-core`: Registry, connection, authentication, and mutation safety
-- `runtime-preferences`: Preferences DataStore adapter
-- `runtime-shared-preferences`: dynamic catalog and standard six-type adapter for persisted SharedPreferences
-- `runtime-protobuf`: Proto DataStore adapter
-- `sample-app`: minimal consumer showing Preferences, SharedPreferences, and Proto setup while verifying debug-only injection and release isolation
-
-## Quick start
-
-The Plugin belongs only in an Android application module. It injects the matching Runtime components into supported debuggable variants, so do not add Runtime artifacts manually.
-
-### Install with an AI coding agent
-
-Copy this prompt into your coding agent from the Android project you want to configure:
+Open the Android project and give your coding agent this prompt:
 
 ```text
-Add DataStore Inspector SDK version 0.2.0 to this Android project.
+Add the latest stable DataStore Inspector SDK release to this Android project.
 
-- Inspect the existing Gradle structure and conventions first. If the project uses a Version Catalog, add the Plugin version and alias there; otherwise follow the existing Plugin declaration style.
-- Apply the com.masaibar.datastore-inspector Plugin only to the Android application module. If the target module is ambiguous, ask me before editing.
-- Use exactly version 0.2.0. Do not guess a latest or nonexistent version.
-- Do not add Runtime artifacts manually. The Plugin injects them only into supported debuggable variants and must leave release variants untouched.
-- Add gradlePluginPortal() to pluginManagement.repositories only if it is missing.
-- Do not change the Gradle JDK, AGP, Kotlin, Gradle Wrapper, compileSdk, minSdk, or targetSdk.
-- Do not guess Proto DataStore schema mappings. If one is needed, ask me for the generated message class and fully qualified Proto message name.
-- Do not update unrelated dependencies, reformat unrelated files, or refactor unrelated code.
-- Verify with the smallest debug build for the target application module, then report the changed files and result.
+- Find the newest non-draft, non-prerelease GitHub Release, verify that the same version is available from both the Gradle Plugin Portal and Maven Central, and pin that exact version. If you cannot verify it, ask me instead of guessing.
+- Follow the existing Gradle conventions and apply the com.masaibar.datastore-inspector Plugin only to the Android application module.
+- Do not add Runtime artifacts manually or change Gradle, AGP, Kotlin, Android SDK versions, or unrelated files.
+- If a Proto schema mapping is needed, ask me for the generated message class and fully qualified Proto message name instead of guessing.
+- Run the smallest debug build for the target module, then report the changed files and result.
 ```
 
-### Manual setup with Version Catalog
+### Configure manually
 
-Add the version and Plugin alias to `gradle/libs.versions.toml`:
+The consumer project's dependency repositories must include `mavenCentral()` because the Plugin does not add repositories.
+
+With Version Catalog:
 
 ```toml
 [versions]
-datastore-inspector = "0.2.0"
+datastore-inspector = "1.0.0"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
 ```
-
-Apply the alias in the Android application module:
 
 ```kotlin
 plugins {
@@ -78,22 +53,20 @@ plugins {
 }
 ```
 
-### Manual setup without Version Catalog
-
-Apply the Plugin directly in the Android application module:
+Without Version Catalog:
 
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "0.2.0"
+  id("com.masaibar.datastore-inspector") version "1.0.0"
 }
 ```
 
-Both manual routes resolve the Plugin through the Gradle Plugin Portal. Most Android projects already include `gradlePluginPortal()` in `pluginManagement.repositories`; add it only if it is missing.
+Apply the Plugin only to the Android application module. It automatically adds the required Runtime components to supported debuggable variants.
 
-### Proto DataStore schema
+### Proto DataStore
 
-Preferences DataStore and persisted SharedPreferences are discovered without additional Inspector configuration. Only when using Proto DataStore, register the generated message class and its fully qualified Proto message name:
+Only Proto DataStore requires registration of the generated message class and fully qualified Proto message name:
 
 ```kotlin
 dataStoreInspector {
@@ -104,50 +77,19 @@ dataStoreInspector {
 }
 ```
 
-Build and run a debuggable variant, then select the application from DataStore Inspector in Android Studio. Non-debuggable variants are left untouched. See [`sample-app`](sample-app) for an executable Preferences, SharedPreferences, and Proto example.
+Build and run a debuggable variant, then select the application in DataStore Inspector. See [`sample-app`](sample-app) for an executable example.
 
-## Build
-
-Building this repository from source requires JDK 21 and Android SDK 36. Published Gradle Plugin
-and Runtime artifacts target Java 17, so consumer builds do not need to move their Gradle JVM to
-JDK 21.
-
-```shell
-./gradlew checkSdk --console=plain
-./gradle-plugin/gradlew -p gradle-plugin clean checkPlugin --console=plain
-```
-
-`checkSdk` also verifies that release APKs and AABs contain no Inspector Runtime, Protocol, Provider, schema, or instrumentation hook.
-
-## Distribution
-
-- Maven Central: `protocol`, `runtime-core`, `runtime-preferences`, `runtime-shared-preferences`, `runtime-protobuf`
-- Gradle Plugin Portal: `com.masaibar.datastore-inspector`
-
-See the [publication guide](docs/en/publishing.md) for source-boundary auditing, local consumer verification, public-repository setup, credentials, and release procedures.
-
-## Namespace
-
-- Kotlin/Java package: `com.masaibar.datastore.inspector.*`
-- Maven group: `com.masaibar.datastore-inspector`
-- Gradle Plugin ID: `com.masaibar.datastore-inspector`
-
-[`gradle/artifact-coordinates.properties`](gradle/artifact-coordinates.properties) is the source of truth for artifact coordinates and the version.
-
-## Documentation
+## Learn more
 
 - [Compatibility and known limitations](docs/en/compatibility.md)
-- [SDK architecture](docs/en/architecture.md)
+- [API stability and versioning](docs/en/api-stability.md)
 - [What the Gradle Plugin changes](docs/en/what-is-injected.md)
 - [Custom DataStore inspection](docs/en/custom-datastore.md)
-- [Security](docs/en/security.md)
-- [Privacy](docs/en/privacy.md)
+- [Security](docs/en/security.md) / [Privacy](docs/en/privacy.md)
 
 ## License
 
-The SDK, including the Gradle Plugin, Protocol, Runtime modules, and sample code in this repository, is licensed under the [Apache License 2.0](LICENSE).
-
-To report a vulnerability, follow the private reporting instructions in [`SECURITY.md`](SECURITY.md).
+[Apache License 2.0](LICENSE). Report vulnerabilities privately by following [`SECURITY.md`](SECURITY.md).
 
 Android is a trademark of Google LLC.
 

@@ -22,6 +22,7 @@ import java.util.IdentityHashMap
 import java.util.ServiceLoader
 import java.util.UUID
 
+@InternalDataStoreInspectorApi
 public data class StoreDeclaration(
   val declarationId: String,
   val name: String,
@@ -33,11 +34,13 @@ public data class StoreDeclaration(
   val valueClassName: String? = null
 )
 
+@InternalDataStoreInspectorApi
 public data class StoreCandidate(
   val instance: Any,
   val declaration: StoreDeclaration
 )
 
+@InternalDataStoreInspectorApi
 public sealed interface AdapterResolution {
   public data class Resolved(
     val adapter: StoreAdapter
@@ -54,11 +57,13 @@ public sealed interface AdapterResolution {
   public data object NotApplicable : AdapterResolution
 }
 
+@InternalDataStoreInspectorApi
 public data class AdapterSnapshot(
   val fingerprint: String,
   val payload: SnapshotPayload
 )
 
+@InternalDataStoreInspectorApi
 public sealed interface AdapterObservation {
   public data class Snapshot(
     val snapshot: AdapterSnapshot
@@ -69,10 +74,12 @@ public sealed interface AdapterObservation {
   ) : AdapterObservation
 }
 
+@InternalDataStoreInspectorApi
 public fun interface StoreSnapshotObserver {
   public fun onObservation(observation: AdapterObservation)
 }
 
+@InternalDataStoreInspectorApi
 public sealed interface AdapterWriteResult {
   public data class Applied(
     val snapshot: AdapterSnapshot
@@ -90,6 +97,7 @@ public sealed interface AdapterWriteResult {
   ) : AdapterWriteResult
 }
 
+@InternalDataStoreInspectorApi
 public class StoreAdapterException(
   public val code: ProtocolErrorCode,
   public val retryable: Boolean = false,
@@ -97,10 +105,12 @@ public class StoreAdapterException(
   cause: Throwable? = null
 ) : IllegalStateException(code.name, cause)
 
+@InternalDataStoreInspectorApi
 public class StoreSnapshotUnsupportedException(
   public val reason: UnsupportedReason
 ) : IllegalStateException(reason.code)
 
+@InternalDataStoreInspectorApi
 public interface StoreAdapter : AutoCloseable {
   public val kind: StoreKind
   public val capabilities: Set<StoreCapability>
@@ -134,6 +144,7 @@ public interface StoreAdapter : AutoCloseable {
   override fun close(): Unit = Unit
 }
 
+@InternalDataStoreInspectorApi
 public fun defaultStoreSemantics(kind: StoreKind): StoreSemantics =
   when (kind) {
     StoreKind.PREFERENCES ->
@@ -159,6 +170,7 @@ public fun defaultStoreSemantics(kind: StoreKind): StoreSemantics =
       )
   }
 
+@InternalDataStoreInspectorApi
 public interface StoreAdapterFactory {
   public val providerId: String
 
@@ -168,6 +180,7 @@ public interface StoreAdapterFactory {
   public fun create(candidate: StoreCandidate): AdapterResolution
 }
 
+@InternalDataStoreInspectorApi
 public sealed interface RegistryState {
   public data object Declared : RegistryState
 
@@ -184,6 +197,7 @@ public sealed interface RegistryState {
   ) : RegistryState
 }
 
+@InternalDataStoreInspectorApi
 public data class RegistryEntry(
   val storeId: String,
   val declaration: StoreDeclaration,
@@ -191,6 +205,7 @@ public data class RegistryEntry(
 )
 
 /** process localで、instanceのobject identityを基準に重複排除するRegistryです。 */
+@InternalDataStoreInspectorApi
 public class DataStoreRegistry(
   private val storeIdFactory: () -> String = { UUID.randomUUID().toString() }
 ) {
@@ -209,6 +224,19 @@ public class DataStoreRegistry(
     instance: Any,
     declaration: StoreDeclaration,
     factories: List<StoreAdapterFactory>
+  ): RegistryEntry = resolveInternal(instance, declaration, factories, remapDeclarationId = true)
+
+  internal fun resolveUniqueDeclaration(
+    instance: Any,
+    declaration: StoreDeclaration,
+    factories: List<StoreAdapterFactory>
+  ): RegistryEntry = resolveInternal(instance, declaration, factories, remapDeclarationId = false)
+
+  private fun resolveInternal(
+    instance: Any,
+    declaration: StoreDeclaration,
+    factories: List<StoreAdapterFactory>,
+    remapDeclarationId: Boolean
   ): RegistryEntry =
     synchronized(lock) {
       instances[instance]?.let { existingId ->
@@ -218,25 +246,61 @@ public class DataStoreRegistry(
           ?.let { declarations.remove(declaration.declarationId) }
         return@synchronized existing
       }
-      val declared = declare(declaration)
-      val resolution = classify(StoreCandidate(instance, declaration), factories)
+      val existingDeclaration = declarations[declaration.declarationId]
+      val declarationIdIsBound =
+        existingDeclaration != null &&
+          instances.values.any { storeId -> storeId == existingDeclaration.storeId }
+      if (declarationIdIsBound && !remapDeclarationId) {
+        throw IllegalArgumentException(
+          "A different DataStore instance is already registered for declarationId " +
+            "'${declaration.declarationId}'."
+        )
+      }
+      val effectiveDeclaration =
+        if (declarationIdIsBound) {
+          declaration.copy(declarationId = nextAvailableDeclarationId(declaration.declarationId))
+        } else {
+          declaration
+        }
+      val declared = declare(effectiveDeclaration)
+      val resolution = classify(StoreCandidate(instance, effectiveDeclaration), factories)
       val updated =
         declared.copy(
-          state =
-            when (resolution) {
-              is AdapterResolution.Resolved -> RegistryState.Resolved(resolution.adapter)
-              is AdapterResolution.Unsupported -> RegistryState.Unsupported(resolution.reason)
-              is AdapterResolution.Error -> RegistryState.Error(resolution.safeMessage)
-              AdapterResolution.NotApplicable ->
-                RegistryState.Unsupported(
-                  UnsupportedReason("NO_ADAPTER", "対応するAdapterがありません。", false)
-                )
-            }
+          state = resolution.toRegistryState()
         )
-      declarations[declaration.declarationId] = updated
+      declarations[effectiveDeclaration.declarationId] = updated
       instances[instance] = updated.storeId
       updated
     }
+
+  private fun nextAvailableDeclarationId(baseDeclarationId: String): String {
+    var ordinal = 2
+    var candidate = "$baseDeclarationId#$ordinal"
+    while (declarations.containsKey(candidate)) {
+      ordinal += 1
+      candidate = "$baseDeclarationId#$ordinal"
+    }
+    return candidate
+  }
+
+  internal fun reclassifyUnsupported(factories: List<StoreAdapterFactory>) {
+    synchronized(lock) {
+      val instancesByStoreId = instances.entries.associate { (instance, storeId) -> storeId to instance }
+      val updates = mutableListOf<Pair<String, RegistryEntry>>()
+      declarations.forEach { (declarationId, entry) ->
+        val unsupported = entry.state as? RegistryState.Unsupported
+        val instance = instancesByStoreId[entry.storeId]
+        if (unsupported?.reason?.code == "NO_ADAPTER" && instance != null) {
+          updates +=
+            declarationId to
+            entry.copy(
+              state = classify(StoreCandidate(instance, entry.declaration), factories).toRegistryState()
+            )
+        }
+      }
+      updates.forEach { (declarationId, entry) -> declarations[declarationId] = entry }
+    }
+  }
 
   public fun entries(): List<RegistryEntry> = synchronized(lock) { declarations.values.toList() }
 
@@ -287,12 +351,24 @@ public class DataStoreRegistry(
     return AdapterResolution.NotApplicable
   }
 
+  private fun AdapterResolution.toRegistryState(): RegistryState =
+    when (this) {
+      is AdapterResolution.Resolved -> RegistryState.Resolved(adapter)
+      is AdapterResolution.Unsupported -> RegistryState.Unsupported(reason)
+      is AdapterResolution.Error -> RegistryState.Error(safeMessage)
+      AdapterResolution.NotApplicable ->
+        RegistryState.Unsupported(
+          UnsupportedReason("NO_ADAPTER", "対応するAdapterがありません。", false)
+        )
+    }
+
   public companion object {
     public fun loadFactories(classLoader: ClassLoader): List<StoreAdapterFactory> =
       ServiceLoader.load(StoreAdapterFactory::class.java, classLoader).toList()
   }
 }
 
+@InternalDataStoreInspectorApi
 public class SnapshotLeaseCache(
   private val nowMillis: () -> Long = System::currentTimeMillis,
   private val tokenFactory: () -> String = {
@@ -412,4 +488,5 @@ public class SnapshotLeaseCache(
 
 internal fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 
+@InternalDataStoreInspectorApi
 public fun sha256(bytes: ByteArray): String = MessageDigest.getInstance("SHA-256").digest(bytes).toHex()

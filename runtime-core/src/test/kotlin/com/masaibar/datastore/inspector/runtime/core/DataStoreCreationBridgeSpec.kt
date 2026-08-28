@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import okio.BufferedSink
 import okio.BufferedSource
 import okio.Path.Companion.toPath
@@ -228,6 +229,48 @@ class DataStoreCreationBridgeSpec :
           stores.forEach { store ->
             CustomInspectionRegistry.handleForStore(store).shouldBeNull()
           }
+        }
+
+        it("同じ生成宣言から複数instanceを作っても観測名をそれぞれのentryへ反映する") {
+          val sharedDeclarationId = "proto-shared-${System.nanoTime()}"
+          val first =
+            DataStoreCreationBridge.createSingleProcess(
+              factory = DataStoreFactory,
+              serializer = ProtoSerializer,
+              corruptionHandler = null,
+              migrations = emptyList(),
+              scope = scope,
+              produceFile = { File(directory, "shared-first.pb") },
+              declarationId = sharedDeclarationId,
+              declarationOwner = "fixture.SharedProtoStores",
+              declarationProperty = "create"
+            )
+          val second =
+            DataStoreCreationBridge.createSingleProcess(
+              factory = DataStoreFactory,
+              serializer = ProtoSerializer,
+              corruptionHandler = null,
+              migrations = emptyList(),
+              scope = scope,
+              produceFile = { File(directory, "shared-second.pb") },
+              declarationId = sharedDeclarationId,
+              declarationOwner = "fixture.SharedProtoStores",
+              declarationProperty = "create"
+            )
+
+          first.data.first()
+          second.data.first()
+
+          val entries =
+            DataStoreInspectorRuntime.registry().entries().filter {
+              it.declaration.declarationId == sharedDeclarationId ||
+                it.declaration.declarationId.startsWith("$sharedDeclarationId#")
+            }
+          entries shouldHaveSize 2
+          entries.map { it.declaration.declarationId } shouldBe
+            listOf(sharedDeclarationId, "$sharedDeclarationId#2")
+          entries.map { it.declaration.fileName } shouldBe
+            listOf("shared-first.pb", "shared-second.pb")
         }
       }
     }

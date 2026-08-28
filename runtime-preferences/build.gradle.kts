@@ -3,6 +3,13 @@ plugins {
   alias(libs.plugins.maven.publish)
 }
 
+kotlin {
+  compilerOptions {
+    optIn.add("com.masaibar.datastore.inspector.protocol.InternalDataStoreInspectorProtocolApi")
+    optIn.add("com.masaibar.datastore.inspector.runtime.core.InternalDataStoreInspectorApi")
+  }
+}
+
 android {
   namespace = "com.masaibar.datastore.inspector.runtime.preferences"
   compileSdk = 36

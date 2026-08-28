@@ -396,6 +396,7 @@ internal object InspectorDependencyPlanner {
 }
 
 @CacheableTask
+@InternalDataStoreInspectorGradleApi
 public abstract class GenerateInstrumentationReportTask : DefaultTask() {
   @get:Input
   public abstract val lines: ListProperty<String>
