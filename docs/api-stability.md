@@ -10,7 +10,7 @@ DataStore Inspector SDKの利用者向けStable APIは、Gradle Plugin ID `com.m
 - **Experimental**: Custom DataStoreのcodec、fallback登録、`customCodecBinding`。`ExperimentalDataStoreInspectorApi`または`ExperimentalDataStoreInspectorGradleApi`への明示的なopt-inが必要で、minor versionでも変更・削除する場合があります。
 - **Internal**: ProtocolのKotlin model／codec、Runtimeのbridge／adapter／ServiceLoader型、Gradle taskとPlugin実装。計装、生成code、module間連携のためpublic bytecodeとして存在するものがありますが、利用者向けAPIではありません。Internal markerへのopt-inはSDK内部の連携だけを目的とし、互換性を保証しません。
 
-公開artifactのJVM API／ABI baselineとsource分類gateは、意図しない公開範囲の増加、分類漏れ、binary互換性変更を検出するためのものです。独立consumerはStable DSLをnamed argument込みでcompileします。baselineに含まれること自体は、その宣言をStable APIにしません。
+source分類gateは利用者向けAPIの分類漏れを検出します。独立consumerはStable DSLをnamed argument込みでcompileし、Plugin ID、extension、`schemaEntry`のsource互換性を検証します。互換性を保証しないInternal bytecodeはbaselineへ固定しません。
 
 ## Versioning
 

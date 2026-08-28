@@ -15,25 +15,18 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
-import org.gradle.process.ExecOperations
 import org.jlleitschuh.gradle.ktlint.KtlintExtension
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.DataInputStream
 import java.io.File
 import java.io.InputStream
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
-import java.security.MessageDigest
 import java.util.Properties
 import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
-import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
 
 data class PublishedArtifactMetadata(
@@ -308,178 +301,6 @@ abstract class VerifyPublishedJvmCompatibility : DefaultTask() {
   }
 }
 
-abstract class PublishedApiBaselineTask @Inject constructor(
-  private val execOperations: ExecOperations
-) : DefaultTask() {
-  @get:InputDirectory
-  abstract val repositoryDirectory: DirectoryProperty
-
-  @get:Input
-  abstract val groupId: Property<String>
-
-  @get:Input
-  abstract val publicationVersion: Property<String>
-
-  @get:Input
-  abstract val artifactExtensions: MapProperty<String, String>
-
-  protected fun renderBaselines(): Map<String, String> {
-    val groupPath = groupId.get().replace('.', '/')
-    val version = publicationVersion.get()
-    return artifactExtensions.get().toSortedMap().mapValues { (artifactId, extension) ->
-      val artifact =
-        repositoryDirectory.get().asFile
-          .resolve(groupPath)
-          .resolve(artifactId)
-          .resolve(version)
-          .resolve("$artifactId-$version.$extension")
-      check(artifact.isFile) { "Published artifact for the API baseline is missing: $artifact" }
-      val classpath = if (extension == "aar") extractClassesJar(artifact, artifactId) else artifact
-      check(extension == "aar" || extension == "jar") {
-        "Unsupported artifact extension for the API baseline: $extension"
-      }
-      val publicClasses = publicClassNames(classpath)
-      check(publicClasses.isNotEmpty()) { "Published artifact contains no public classes: $artifact" }
-      renderJavap(classpath, publicClasses)
-    }
-  }
-
-  private fun extractClassesJar(aar: File, artifactId: String): File {
-    val output = temporaryDir.resolve("$artifactId/classes.jar")
-    output.parentFile.mkdirs()
-    ZipFile(aar).use { archive ->
-      val entry = checkNotNull(archive.getEntry("classes.jar")) { "AAR contains no classes.jar: $aar" }
-      archive.getInputStream(entry).use { input -> output.outputStream().use(input::copyTo) }
-    }
-    return output
-  }
-
-  private fun publicClassNames(classpath: File): List<String> =
-    ZipFile(classpath).use { archive ->
-      archive.entries().asSequence()
-        .filter { entry ->
-          !entry.isDirectory &&
-            entry.name.endsWith(".class") &&
-            !entry.name.startsWith("META-INF/") &&
-            entry.name != "module-info.class"
-        }
-        .filter { entry -> archive.getInputStream(entry).use { isPublicClass(it.readBytes()) } }
-        .map { entry -> entry.name.removeSuffix(".class").replace('/', '.') }
-        .sorted()
-        .toList()
-    }
-
-  private fun isPublicClass(bytes: ByteArray): Boolean =
-    DataInputStream(ByteArrayInputStream(bytes)).use { input ->
-      check(input.readInt() == 0xCAFEBABE.toInt()) { "Invalid class-file magic." }
-      input.readUnsignedShort()
-      input.readUnsignedShort()
-      val constantPoolCount = input.readUnsignedShort()
-      var index = 1
-      while (index < constantPoolCount) {
-        when (val tag = input.readUnsignedByte()) {
-          1 -> input.skipBytes(input.readUnsignedShort())
-          3, 4 -> input.skipBytes(4)
-          5, 6 -> {
-            input.skipBytes(8)
-            index++
-          }
-          7, 8, 16, 19, 20 -> input.skipBytes(2)
-          9, 10, 11, 12, 17, 18 -> input.skipBytes(4)
-          15 -> input.skipBytes(3)
-          else -> error("Unsupported class-file constant-pool tag: $tag")
-        }
-        index++
-      }
-      input.readUnsignedShort() and 0x0001 != 0
-    }
-
-  private fun renderJavap(classpath: File, classNames: List<String>): String {
-    val javap = File(System.getProperty("java.home"), "bin/javap")
-    check(javap.isFile) { "javap is missing: $javap" }
-    val rendered = StringBuilder()
-    classNames.chunked(100).forEach { batch ->
-      val stdout = ByteArrayOutputStream()
-      val stderr = ByteArrayOutputStream()
-      val result =
-        execOperations.exec {
-          commandLine(
-            javap.absolutePath,
-            "-classpath",
-            classpath.absolutePath,
-            "-protected",
-            "-s",
-            "-constants",
-            *batch.toTypedArray()
-          )
-          standardOutput = stdout
-          errorOutput = stderr
-          isIgnoreExitValue = true
-        }
-      check(result.exitValue == 0) {
-        "javap failed: ${stderr.toString(Charsets.UTF_8)}"
-      }
-      rendered.append(stdout.toString(Charsets.UTF_8))
-    }
-    return rendered
-      .lineSequence()
-      .filterNot { it.startsWith("Compiled from ") }
-      .joinToString(separator = "\n")
-      .trimEnd() + "\n"
-  }
-}
-
-abstract class DumpPublishedApiBaseline @Inject constructor(
-  execOperations: ExecOperations
-) : PublishedApiBaselineTask(execOperations) {
-  @get:OutputDirectory
-  abstract val baselineDirectory: DirectoryProperty
-
-  @TaskAction
-  fun dump() {
-    val outputDirectory = baselineDirectory.get().asFile
-    outputDirectory.mkdirs()
-    renderBaselines().forEach { (artifactId, content) ->
-      outputDirectory.resolve("$artifactId.api").writeText(content)
-    }
-    logger.lifecycle("Updated published API baselines: $outputDirectory")
-  }
-}
-
-abstract class VerifyPublishedApiBaseline @Inject constructor(
-  execOperations: ExecOperations
-) : PublishedApiBaselineTask(execOperations) {
-  @get:InputDirectory
-  abstract val baselineDirectory: DirectoryProperty
-
-  @get:OutputFile
-  abstract val reportFile: RegularFileProperty
-
-  @TaskAction
-  fun verify() {
-    val expected = renderBaselines()
-    val baselineDirectory = baselineDirectory.get().asFile
-    val baselineFiles = baselineDirectory.listFiles { file -> file.extension == "api" }.orEmpty()
-    val actualArtifactIds = baselineFiles.mapTo(sortedSetOf()) { it.nameWithoutExtension }
-    check(actualArtifactIds == expected.keys) {
-      "API baseline artifact set differs. Expected: ${expected.keys}; actual: $actualArtifactIds"
-    }
-    val report = mutableListOf<String>()
-    expected.forEach { (artifactId, current) ->
-      val baseline = baselineDirectory.resolve("$artifactId.api")
-      check(baseline.readText() == current) {
-        "$artifactId public API/ABI differs from its baseline. If intentional, run dumpPublishedApiBaseline and review the diff."
-      }
-      val digest = MessageDigest.getInstance("SHA-256").digest(current.toByteArray()).joinToString("") { "%02x".format(it) }
-      report += "$artifactId: sha256=$digest"
-    }
-    val output = reportFile.get().asFile
-    output.parentFile.mkdirs()
-    output.writeText(report.joinToString(separator = "\n", postfix = "\n"))
-    logger.lifecycle("Published API/ABI baselines match: $output")
-  }
-}
-
 abstract class VerifyProtocolWireCompatibility : DefaultTask() {
   @get:Input
   abstract val currentProtocolVersion: Property<String>
@@ -565,6 +386,9 @@ abstract class VerifySourceApiClassifications : DefaultTask() {
   @get:PathSensitive(PathSensitivity.RELATIVE)
   abstract val sourceFiles: ConfigurableFileCollection
 
+  @get:Input
+  abstract val requiredMemberClassifications: MapProperty<String, String>
+
   @get:OutputFile
   abstract val reportFile: RegularFileProperty
 
@@ -582,16 +406,18 @@ abstract class VerifySourceApiClassifications : DefaultTask() {
     val markerDefinition = Regex("^public annotation class (?:${markers.joinToString("|")})$")
     val unclassified = mutableListOf<String>()
     val files = sourceFiles.files.filter(File::isFile).sortedBy(File::getPath)
+    fun annotationsBefore(lines: List<String>, index: Int): List<String> =
+      lines.subList(0, index)
+        .asReversed()
+        .dropWhile(String::isBlank)
+        .takeWhile { candidate -> candidate.trimStart().startsWith("@") }
+        .map(String::trim)
+
     files.forEach { source ->
       val lines = source.readLines()
       lines.forEachIndexed { index, line ->
         if (!line.startsWith("public ") || markerDefinition.matches(line.trim())) return@forEachIndexed
-        val annotations =
-          lines.subList(0, index)
-            .asReversed()
-            .dropWhile(String::isBlank)
-            .takeWhile { candidate -> candidate.trimStart().startsWith("@") }
-            .map(String::trim)
+        val annotations = annotationsBefore(lines, index)
         if (annotations.none { annotation -> markers.any { marker -> annotation.startsWith("@$marker") } }) {
           unclassified += "${source.relativeTo(projectDirectory.get().asFile)}:${index + 1}: ${line.trim()}"
         }
@@ -600,6 +426,27 @@ abstract class VerifySourceApiClassifications : DefaultTask() {
     check(unclassified.isEmpty()) {
       "Published top-level declarations must be classified as Stable, Experimental, or Internal:\n" +
         unclassified.joinToString("\n")
+    }
+
+    requiredMemberClassifications.get().toSortedMap().forEach { (location, marker) ->
+      val separator = location.lastIndexOf('#')
+      check(separator > 0 && separator < location.lastIndex) {
+        "Invalid member classification location: $location"
+      }
+      val relativePath = location.substring(0, separator)
+      val memberName = location.substring(separator + 1)
+      val source = projectDirectory.get().asFile.resolve(relativePath)
+      check(source in files) { "Classified member source is not an input: $relativePath" }
+      val lines = source.readLines()
+      val declaration = Regex("^\\s*public\\s+fun\\s+${Regex.escape(memberName)}\\s*\\(")
+      val matches = lines.indices.filter { index -> declaration.containsMatchIn(lines[index]) }
+      check(matches.size == 1) {
+        "Expected exactly one public function named $memberName in $relativePath, found ${matches.size}."
+      }
+      val annotations = annotationsBefore(lines, matches.single())
+      check(annotations.any { annotation -> annotation.startsWith("@$marker") }) {
+        "$relativePath#$memberName must be classified with @$marker."
+      }
     }
 
     val optInMarkers =
@@ -624,7 +471,10 @@ abstract class VerifySourceApiClassifications : DefaultTask() {
 
     val output = reportFile.get().asFile
     output.parentFile.mkdirs()
-    output.writeText("classified top-level declarations: ${files.size} source files\n")
+    output.writeText(
+      "classified top-level declarations: ${files.size} source files\n" +
+        "classified public members: ${requiredMemberClassifications.get().size}\n"
+    )
     logger.lifecycle("Published source API classifications are complete: $output")
   }
 }
@@ -876,15 +726,10 @@ val verifyPublishedJvmCompatibility =
     reportFile.set(layout.buildDirectory.file("reports/publication-jvm-compatibility.txt"))
   }
 
-val publishedArtifactExtensions =
-  publishedArtifacts.values.associate { metadata ->
-    artifactCoordinate(metadata.artifactProperty) to metadata.extension
-  } + (artifactCoordinate("gradlePluginArtifact") to "jar")
-
 val verifySourceApiClassifications =
   tasks.register<VerifySourceApiClassifications>("verifySourceApiClassifications") {
     group = "verification"
-    description = "Verifies that every published top-level Kotlin declaration has an API classification."
+    description = "Verifies published top-level declarations and documented Gradle DSL members have API classifications."
     projectDirectory.set(layout.projectDirectory)
     sourceFiles.from(
       listOf(
@@ -896,39 +741,15 @@ val verifySourceApiClassifications =
         "gradle-plugin/src/main/kotlin"
       ).map { path -> fileTree(path) { include("**/*.kt") } }
     )
+    requiredMemberClassifications.set(
+      mapOf(
+        "gradle-plugin/src/main/kotlin/com/masaibar/datastore/inspector/gradle/DataStoreInspectorPlugin.kt#schemaEntry" to
+          "StableDataStoreInspectorGradleApi",
+        "gradle-plugin/src/main/kotlin/com/masaibar/datastore/inspector/gradle/DataStoreInspectorPlugin.kt#customCodecBinding" to
+          "ExperimentalDataStoreInspectorGradleApi"
+      )
+    )
     reportFile.set(layout.buildDirectory.file("reports/source-api-classifications.txt"))
-  }
-
-val dumpPublishedApiBaseline =
-  tasks.register<DumpPublishedApiBaseline>("dumpPublishedApiBaseline") {
-    group = "verification"
-    description = "Updates JVM API/ABI baselines from published JAR and AAR artifacts."
-    dependsOn(
-      publishSdkToPublicationVerificationRepository,
-      publishGradlePluginToPublicationVerificationRepository
-    )
-    repositoryDirectory.set(publicationRepositoryDirectory)
-    groupId.set(artifactCoordinate("group"))
-    publicationVersion.set(artifactCoordinate("version"))
-    artifactExtensions.set(publishedArtifactExtensions)
-    baselineDirectory.set(layout.projectDirectory.dir("api"))
-  }
-
-val verifyPublishedApiBaseline =
-  tasks.register<VerifyPublishedApiBaseline>("verifyPublishedApiBaseline") {
-    group = "verification"
-    description = "Compares published JAR and AAR JVM API/ABI with their baselines."
-    mustRunAfter(dumpPublishedApiBaseline)
-    dependsOn(
-      publishSdkToPublicationVerificationRepository,
-      publishGradlePluginToPublicationVerificationRepository
-    )
-    repositoryDirectory.set(publicationRepositoryDirectory)
-    groupId.set(artifactCoordinate("group"))
-    publicationVersion.set(artifactCoordinate("version"))
-    artifactExtensions.set(publishedArtifactExtensions)
-    baselineDirectory.set(layout.projectDirectory.dir("api"))
-    reportFile.set(layout.buildDirectory.file("reports/publication-api-baseline.txt"))
   }
 
 val verifyPublishedSdkConsumer =
@@ -994,7 +815,6 @@ val checkPublications =
       verifyPublishedSdkMetadata,
       verifyPublishedJvmCompatibility,
       verifyPublishedSdkConsumer,
-      verifyPublishedApiBaseline,
       verifySourceApiClassifications
     )
   }

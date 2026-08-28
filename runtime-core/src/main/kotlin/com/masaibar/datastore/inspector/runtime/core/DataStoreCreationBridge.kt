@@ -836,8 +836,8 @@ public object DataStoreCreationBridge {
         valueClassName = defaultValue?.javaClass?.name
       )
     DataStoreInspectorRuntime.declareGenerated(declaration)
-    DataStoreInspectorRuntime.registerGenerated(store, declaration)
-    observedName?.bind(declarationId)
+    val entry = DataStoreInspectorRuntime.registerGenerated(store, declaration)
+    observedName?.bind(entry.declaration.declarationId)
     return store
   }
 

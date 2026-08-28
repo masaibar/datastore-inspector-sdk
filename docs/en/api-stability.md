@@ -10,7 +10,7 @@ The only Stable consumer APIs in DataStore Inspector SDK are the Gradle Plugin I
 - **Experimental**: Custom DataStore codecs, fallback registration, and `customCodecBinding`. They require an explicit opt-in to `ExperimentalDataStoreInspectorApi` or `ExperimentalDataStoreInspectorGradleApi` and may change or be removed in a minor version.
 - **Internal**: Protocol Kotlin models and codecs, Runtime bridges, adapters and ServiceLoader types, and Gradle tasks and Plugin implementation. Some remain public in bytecode for instrumentation, generated code, or module integration, but they are not consumer APIs. Opting in to an Internal marker is only for SDK integration and carries no compatibility guarantee.
 
-The JVM API and ABI baseline and source-classification gate for published artifacts detect unintended additions, missing classifications, and binary compatibility changes. An independent consumer compiles the Stable DSL with named arguments. Inclusion in the baseline does not make a declaration Stable.
+The source-classification gate detects missing classifications on consumer APIs. An independent consumer compiles the Stable DSL with named arguments to verify source compatibility for the Plugin ID, extension, and `schemaEntry`. Internal bytecode, which has no compatibility guarantee, is not frozen in a baseline.
 
 ## Versioning
 

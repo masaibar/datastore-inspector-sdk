@@ -73,11 +73,12 @@ public fun registerDataStoreInspectorFallback(
   instance: DataStore<*>,
   declaration: InspectorFallbackStoreDeclaration
 ) {
+  val runtimeDeclarationId = fallbackDeclarationId(declaration.declarationId)
   DataStoreInspectorRuntime.registerFallback(
     instance = instance,
     declaration =
       StoreDeclaration(
-        declarationId = declaration.declarationId,
+        declarationId = runtimeDeclarationId,
         name = declaration.name,
         fileName = declaration.fileName,
         kindHint =
@@ -93,6 +94,9 @@ public fun registerDataStoreInspectorFallback(
       )
   )
 }
+
+internal fun fallbackDeclarationId(declarationId: String): String =
+  "$FALLBACK_DECLARATION_PREFIX$declarationId"
 
 @InternalDataStoreInspectorApi
 public object DataStoreInspectorRuntime {
@@ -114,13 +118,18 @@ public object DataStoreInspectorRuntime {
   public fun registerGenerated(
     instance: Any,
     declaration: StoreDeclaration
-  ): RegistryEntry = registry.resolve(instance, declaration, factories)
+  ): RegistryEntry =
+    synchronized(lock) {
+      registry.resolve(instance, declaration, factories)
+    }
 
   internal fun registerFallback(
     instance: Any,
     declaration: StoreDeclaration
   ) {
-    registry.resolve(instance, declaration, factories)
+    synchronized(lock) {
+      registry.resolveUniqueDeclaration(instance, declaration, factories)
+    }
   }
 
   internal fun updateObservedFileName(
@@ -140,6 +149,7 @@ public object DataStoreInspectorRuntime {
         }
       factories = assembleRuntimeFactories(loadedFactories, customFactory)
       InspectorCustomCodecRegistry.load(context.classLoader)
+      registry.reclassifyUnsupported(factories)
       val loadedCatalogProviders =
         DynamicStoreCatalog.loadProviders(context.classLoader).map { provider ->
           provider.initialize(context.applicationContext)
@@ -175,6 +185,8 @@ public object DataStoreInspectorRuntime {
     }
   }
 }
+
+private const val FALLBACK_DECLARATION_PREFIX: String = "manual-fallback:"
 
 internal fun assembleRuntimeFactories(
   loadedFactories: List<StoreAdapterFactory>,

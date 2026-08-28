@@ -224,6 +224,19 @@ public class DataStoreRegistry(
     instance: Any,
     declaration: StoreDeclaration,
     factories: List<StoreAdapterFactory>
+  ): RegistryEntry = resolveInternal(instance, declaration, factories, remapDeclarationId = true)
+
+  internal fun resolveUniqueDeclaration(
+    instance: Any,
+    declaration: StoreDeclaration,
+    factories: List<StoreAdapterFactory>
+  ): RegistryEntry = resolveInternal(instance, declaration, factories, remapDeclarationId = false)
+
+  private fun resolveInternal(
+    instance: Any,
+    declaration: StoreDeclaration,
+    factories: List<StoreAdapterFactory>,
+    remapDeclarationId: Boolean
   ): RegistryEntry =
     synchronized(lock) {
       instances[instance]?.let { existingId ->
@@ -233,25 +246,61 @@ public class DataStoreRegistry(
           ?.let { declarations.remove(declaration.declarationId) }
         return@synchronized existing
       }
-      val declared = declare(declaration)
-      val resolution = classify(StoreCandidate(instance, declaration), factories)
+      val existingDeclaration = declarations[declaration.declarationId]
+      val declarationIdIsBound =
+        existingDeclaration != null &&
+          instances.values.any { storeId -> storeId == existingDeclaration.storeId }
+      if (declarationIdIsBound && !remapDeclarationId) {
+        throw IllegalArgumentException(
+          "A different DataStore instance is already registered for declarationId " +
+            "'${declaration.declarationId}'."
+        )
+      }
+      val effectiveDeclaration =
+        if (declarationIdIsBound) {
+          declaration.copy(declarationId = nextAvailableDeclarationId(declaration.declarationId))
+        } else {
+          declaration
+        }
+      val declared = declare(effectiveDeclaration)
+      val resolution = classify(StoreCandidate(instance, effectiveDeclaration), factories)
       val updated =
         declared.copy(
-          state =
-            when (resolution) {
-              is AdapterResolution.Resolved -> RegistryState.Resolved(resolution.adapter)
-              is AdapterResolution.Unsupported -> RegistryState.Unsupported(resolution.reason)
-              is AdapterResolution.Error -> RegistryState.Error(resolution.safeMessage)
-              AdapterResolution.NotApplicable ->
-                RegistryState.Unsupported(
-                  UnsupportedReason("NO_ADAPTER", "対応するAdapterがありません。", false)
-                )
-            }
+          state = resolution.toRegistryState()
         )
-      declarations[declaration.declarationId] = updated
+      declarations[effectiveDeclaration.declarationId] = updated
       instances[instance] = updated.storeId
       updated
     }
+
+  private fun nextAvailableDeclarationId(baseDeclarationId: String): String {
+    var ordinal = 2
+    var candidate = "$baseDeclarationId#$ordinal"
+    while (declarations.containsKey(candidate)) {
+      ordinal += 1
+      candidate = "$baseDeclarationId#$ordinal"
+    }
+    return candidate
+  }
+
+  internal fun reclassifyUnsupported(factories: List<StoreAdapterFactory>) {
+    synchronized(lock) {
+      val instancesByStoreId = instances.entries.associate { (instance, storeId) -> storeId to instance }
+      val updates = mutableListOf<Pair<String, RegistryEntry>>()
+      declarations.forEach { (declarationId, entry) ->
+        val unsupported = entry.state as? RegistryState.Unsupported
+        val instance = instancesByStoreId[entry.storeId]
+        if (unsupported?.reason?.code == "NO_ADAPTER" && instance != null) {
+          updates +=
+            declarationId to
+            entry.copy(
+              state = classify(StoreCandidate(instance, entry.declaration), factories).toRegistryState()
+            )
+        }
+      }
+      updates.forEach { (declarationId, entry) -> declarations[declarationId] = entry }
+    }
+  }
 
   public fun entries(): List<RegistryEntry> = synchronized(lock) { declarations.values.toList() }
 
@@ -301,6 +350,17 @@ public class DataStoreRegistry(
     }
     return AdapterResolution.NotApplicable
   }
+
+  private fun AdapterResolution.toRegistryState(): RegistryState =
+    when (this) {
+      is AdapterResolution.Resolved -> RegistryState.Resolved(adapter)
+      is AdapterResolution.Unsupported -> RegistryState.Unsupported(reason)
+      is AdapterResolution.Error -> RegistryState.Error(safeMessage)
+      AdapterResolution.NotApplicable ->
+        RegistryState.Unsupported(
+          UnsupportedReason("NO_ADAPTER", "対応するAdapterがありません。", false)
+        )
+    }
 
   public companion object {
     public fun loadFactories(classLoader: ClassLoader): List<StoreAdapterFactory> =
