@@ -16,6 +16,7 @@ import java.util.IdentityHashMap
  * ASM hookはこのobjectのmethodへ既知descriptorを置換します。inspection context外では元のAPIへ
  * そのまま委譲し、値・document・例外を保持しません。
  */
+@InternalDataStoreInspectorApi
 public object StructuredSerializationCapture {
   private val activeSession = ThreadLocal<CaptureSession?>()
 

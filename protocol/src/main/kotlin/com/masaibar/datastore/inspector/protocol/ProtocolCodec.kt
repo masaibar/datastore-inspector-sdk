@@ -14,6 +14,7 @@ import java.nio.charset.CodingErrorAction
 import java.nio.charset.StandardCharsets
 import java.util.Base64
 
+@InternalDataStoreInspectorProtocolApi
 public object ProtocolLimits {
   public const val UNAUTHENTICATED_FRAME_BYTES: Int = 64 * 1024
   public const val AUTHENTICATED_FRAME_BYTES: Int = 16 * 1024 * 1024
@@ -33,6 +34,7 @@ public object ProtocolLimits {
   public const val MAX_UNSUPPORTED_REASON_SAFE_MESSAGE_UTF8_BYTES: Int = 1024
 }
 
+@InternalDataStoreInspectorProtocolApi
 public enum class ProtocolFailureKind {
   MALFORMED_UTF8,
   MALFORMED_JSON,
@@ -44,12 +46,14 @@ public enum class ProtocolFailureKind {
   MISSING_CAPABILITY
 }
 
+@InternalDataStoreInspectorProtocolApi
 public class ProtocolException(
   public val kind: ProtocolFailureKind,
   message: String,
   cause: Throwable? = null
 ) : IllegalArgumentException(message, cause)
 
+@InternalDataStoreInspectorProtocolApi
 public object Base64ByteArraySerializer : KSerializer<ByteArray> {
   override val descriptor: SerialDescriptor =
     PrimitiveSerialDescriptor("Rfc4648Base64", PrimitiveKind.STRING)
@@ -90,6 +94,7 @@ public object Base64ByteArraySerializer : KSerializer<ByteArray> {
   private val BASE64_PATTERN = Regex("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$")
 }
 
+@InternalDataStoreInspectorProtocolApi
 public object ProtocolJson {
   private val json =
     Json {
@@ -167,6 +172,7 @@ public object ProtocolJson {
   }
 }
 
+@InternalDataStoreInspectorProtocolApi
 public object ProtocolFraming {
   public fun encode(
     payload: ByteArray,

@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalDataStoreInspectorApi::class)
+
 package com.masaibar.datastore.inspector.runtime.core
 
 import androidx.datastore.core.DataStore
@@ -1145,7 +1147,7 @@ private object BinarySettingsSerializer : Serializer<Settings> {
 private class SettingsCodec(
   override val codecId: String
 ) : InspectorCustomCodec<Settings> {
-  override val format: CustomDocumentFormat = CustomDocumentFormat.JSON
+  override val format: InspectorCustomDocumentFormat = InspectorCustomDocumentFormat.JSON
 
   override fun encode(value: Settings): String = encodeSettings(value)
 
@@ -1311,7 +1313,7 @@ private class FallbackCacheProvider(
 
 private object FallbackCacheCodec : InspectorCustomCodec<FallbackCacheValue> {
   override val codecId: String = "cache-value"
-  override val format: CustomDocumentFormat = CustomDocumentFormat.JSON
+  override val format: InspectorCustomDocumentFormat = InspectorCustomDocumentFormat.JSON
 
   override fun encode(value: FallbackCacheValue): String =
     buildJsonObject {

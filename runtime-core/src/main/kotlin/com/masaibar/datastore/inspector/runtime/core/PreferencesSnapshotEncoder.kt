@@ -23,6 +23,7 @@ import java.nio.ByteOrder
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 
+@InternalDataStoreInspectorApi
 public object PreferencesSnapshotLimits {
   public const val MAX_ENTRIES: Int = ProtocolLimits.MAX_PREFERENCES_ENTRIES
   public const val MAX_BACKING_FILE_BYTES: Long = 16L * 1024L * 1024L
@@ -33,6 +34,7 @@ public object PreferencesSnapshotLimits {
   public const val MAX_ESTIMATED_WIRE_BYTES: Long = 12L * 1024L * 1024L
 }
 
+@InternalDataStoreInspectorApi
 public object PreferencesSnapshotEncoder {
   private const val FORMAT_VERSION: Int = 1
   private val editCapabilities =

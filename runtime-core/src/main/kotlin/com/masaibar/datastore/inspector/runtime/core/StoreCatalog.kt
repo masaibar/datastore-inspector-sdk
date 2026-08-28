@@ -14,6 +14,7 @@ import com.masaibar.datastore.inspector.protocol.StoreStatus
 import java.util.ServiceLoader
 import java.util.UUID
 
+@InternalDataStoreInspectorApi
 public class RuntimeConnectionContext(
   public val version: ProtocolVersion,
   capabilities: Set<String>,
@@ -22,6 +23,7 @@ public class RuntimeConnectionContext(
   public val capabilities: Set<String> = capabilities.toSet()
 }
 
+@InternalDataStoreInspectorApi
 public data class StoreSemanticIdentity(
   val backend: StoreBackend,
   val storageScope: StorageScope,
@@ -29,6 +31,7 @@ public data class StoreSemanticIdentity(
   val logicalName: String
 )
 
+@InternalDataStoreInspectorApi
 public data class CatalogStoreCandidate(
   val identity: StoreSemanticIdentity,
   val name: String,
@@ -41,6 +44,7 @@ public data class CatalogStoreCandidate(
   val openAdapter: () -> StoreAdapter
 )
 
+@InternalDataStoreInspectorApi
 public interface StoreCatalogProvider : AutoCloseable {
   public val providerId: String
   public val requiredCapabilities: Set<String>
@@ -55,12 +59,14 @@ public interface StoreCatalogProvider : AutoCloseable {
   override fun close(): Unit = Unit
 }
 
+@InternalDataStoreInspectorApi
 public class StoreCatalogException(
   public val code: ProtocolErrorCode,
   public val retryable: Boolean = false,
   cause: Throwable? = null
 ) : IllegalStateException(code.name, cause)
 
+@InternalDataStoreInspectorApi
 public class DynamicStoreCatalog(
   providers: List<StoreCatalogProvider>,
   private val leases: SnapshotLeaseCache,
@@ -252,6 +258,7 @@ public class DynamicStoreCatalog(
   }
 }
 
+@InternalDataStoreInspectorApi
 public class CatalogRecord internal constructor(
   public val storeId: String,
   public val generation: Long,

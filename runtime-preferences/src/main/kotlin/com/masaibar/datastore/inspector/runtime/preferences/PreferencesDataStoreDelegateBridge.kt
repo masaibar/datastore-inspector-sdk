@@ -7,6 +7,7 @@ import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.preferences.core.Preferences
 import com.masaibar.datastore.inspector.protocol.StoreKind
 import com.masaibar.datastore.inspector.runtime.core.DataStoreInspectorRuntime
+import com.masaibar.datastore.inspector.runtime.core.InternalDataStoreInspectorApi
 import com.masaibar.datastore.inspector.runtime.core.StoreDeclaration
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -16,6 +17,7 @@ import kotlin.reflect.KProperty
 import androidx.datastore.preferences.preferencesDataStore as createPreferencesDataStoreDelegate
 
 /** ASMが`preferencesDataStore` delegate呼び出しを置き換えるdebug Runtime bridgeです。 */
+@InternalDataStoreInspectorApi
 public object PreferencesDataStoreDelegateBridge {
   @JvmStatic
   public fun preferencesDataStore(

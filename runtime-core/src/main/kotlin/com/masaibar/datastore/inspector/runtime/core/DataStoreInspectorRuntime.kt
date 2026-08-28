@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalDataStoreInspectorApi::class)
+
 package com.masaibar.datastore.inspector.runtime.core
 
 import android.app.Application
@@ -11,6 +13,7 @@ import android.net.LocalSocket
 import android.net.Uri
 import android.os.Build
 import android.os.Process
+import androidx.datastore.core.DataStore
 import com.masaibar.datastore.inspector.protocol.ErrorResponse
 import com.masaibar.datastore.inspector.protocol.HandshakeRequest
 import com.masaibar.datastore.inspector.protocol.HandshakeResponse
@@ -40,6 +43,62 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
+@ExperimentalDataStoreInspectorApi
+public enum class InspectorFallbackStoreKind {
+  PREFERENCES,
+  PROTO,
+  CUSTOM
+}
+
+@ExperimentalDataStoreInspectorApi
+public data class InspectorFallbackStoreDeclaration(
+  val declarationId: String,
+  val name: String,
+  val kind: InspectorFallbackStoreKind,
+  val fileName: String? = null,
+  val serializerClass: Class<*>? = null,
+  val valueClass: Class<*>? = null
+) {
+  init {
+    require(declarationId.isNotBlank()) { "declarationId must not be blank." }
+    require(name.isNotBlank()) { "name must not be blank." }
+    require(kind != InspectorFallbackStoreKind.PROTO || valueClass != null) {
+      "A Proto fallback requires valueClass."
+    }
+  }
+}
+
+@ExperimentalDataStoreInspectorApi
+public fun registerDataStoreInspectorFallback(
+  instance: DataStore<*>,
+  declaration: InspectorFallbackStoreDeclaration
+) {
+  val runtimeDeclarationId = fallbackDeclarationId(declaration.declarationId)
+  DataStoreInspectorRuntime.registerFallback(
+    instance = instance,
+    declaration =
+      StoreDeclaration(
+        declarationId = runtimeDeclarationId,
+        name = declaration.name,
+        fileName = declaration.fileName,
+        kindHint =
+          when (declaration.kind) {
+            InspectorFallbackStoreKind.PREFERENCES -> StoreKind.PREFERENCES
+            InspectorFallbackStoreKind.PROTO -> StoreKind.PROTO
+            InspectorFallbackStoreKind.CUSTOM -> StoreKind.CUSTOM
+          },
+        owner = declaration.valueClass?.name ?: "fallback",
+        property = declaration.name,
+        serializerClassName = declaration.serializerClass?.name,
+        valueClassName = declaration.valueClass?.name
+      )
+  )
+}
+
+internal fun fallbackDeclarationId(declarationId: String): String =
+  "$FALLBACK_DECLARATION_PREFIX$declarationId"
+
+@InternalDataStoreInspectorApi
 public object DataStoreInspectorRuntime {
   private val lock = Any()
   private val registry = DataStoreRegistry()
@@ -59,13 +118,19 @@ public object DataStoreInspectorRuntime {
   public fun registerGenerated(
     instance: Any,
     declaration: StoreDeclaration
-  ): RegistryEntry = registry.resolve(instance, declaration, factories)
+  ): RegistryEntry =
+    synchronized(lock) {
+      registry.resolve(instance, declaration, factories)
+    }
 
-  /** 自動計装対象外のKMP Android／Factory経路が、保持済みの同じ実instanceを登録するfallbackです。 */
-  public fun registerFallback(
+  internal fun registerFallback(
     instance: Any,
     declaration: StoreDeclaration
-  ): RegistryEntry = registry.resolve(instance, declaration, factories)
+  ) {
+    synchronized(lock) {
+      registry.resolveUniqueDeclaration(instance, declaration, factories)
+    }
+  }
 
   internal fun updateObservedFileName(
     declarationId: String,
@@ -84,6 +149,7 @@ public object DataStoreInspectorRuntime {
         }
       factories = assembleRuntimeFactories(loadedFactories, customFactory)
       InspectorCustomCodecRegistry.load(context.classLoader)
+      registry.reclassifyUnsupported(factories)
       val loadedCatalogProviders =
         DynamicStoreCatalog.loadProviders(context.classLoader).map { provider ->
           provider.initialize(context.applicationContext)
@@ -119,6 +185,8 @@ public object DataStoreInspectorRuntime {
     }
   }
 }
+
+private const val FALLBACK_DECLARATION_PREFIX: String = "manual-fallback:"
 
 internal fun assembleRuntimeFactories(
   loadedFactories: List<StoreAdapterFactory>,
@@ -519,6 +587,7 @@ private fun readRequest(
 
 private const val AUTHENTICATED_FRAME_TIMEOUT_MILLIS: Int = 30_000
 
+@InternalDataStoreInspectorApi
 public class DataStoreInspectorInitProvider : ContentProvider() {
   override fun onCreate(): Boolean {
     val appContext = context?.applicationContext ?: return false

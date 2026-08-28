@@ -19,12 +19,14 @@ import org.gradle.api.tasks.TaskAction
 import java.security.MessageDigest
 import javax.inject.Inject
 
+@StableDataStoreInspectorGradleApi
 public abstract class DataStoreInspectorExtension @Inject constructor(objects: ObjectFactory) {
   internal val schemaMappings: ListProperty<String> =
     objects.listProperty(String::class.java).convention(emptyList())
   internal val customCodecBindings: ListProperty<String> =
     objects.listProperty(String::class.java).convention(emptyList())
 
+  @StableDataStoreInspectorGradleApi
   public fun schemaEntry(generatedJvmClassName: String, rootMessageFullName: String) {
     require(MAPPING_PART.matches(generatedJvmClassName)) {
       "generated JVM class名が不正です: $generatedJvmClassName"
@@ -41,6 +43,7 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
    * 生成Java sourceが`InspectorCustomCodec<ValueClass>`の型関係とcodecのpublic no-arg
    * constructorをcompile時に検証します。class名の文字列自体をRuntimeへ渡すことはありません。
    */
+  @ExperimentalDataStoreInspectorGradleApi
   public fun customCodecBinding(
     serializerClassName: String,
     valueClassName: String,
@@ -64,6 +67,7 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
 }
 
 @CacheableTask
+@InternalDataStoreInspectorGradleApi
 public abstract class GenerateCustomCodecBindingsTask : DefaultTask() {
   @get:Input
   public abstract val bindings: ListProperty<String>
@@ -175,6 +179,7 @@ internal object CustomCodecBindingSourceProducer {
 }
 
 @CacheableTask
+@InternalDataStoreInspectorGradleApi
 public abstract class GenerateDataStoreInspectorSchemaTask : DefaultTask() {
   @get:InputFiles
   @get:PathSensitive(PathSensitivity.NONE)
@@ -304,6 +309,7 @@ internal object SchemaIndexProducer {
 }
 
 /** application moduleへ1回適用するGradle Pluginです。 */
+@InternalDataStoreInspectorGradleApi
 public class DataStoreInspectorPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     val extension =

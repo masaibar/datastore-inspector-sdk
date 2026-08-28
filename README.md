@@ -10,9 +10,9 @@
 
 DataStore Inspector was born from a desire to bring back the excellent developer experience once offered by [Stetho](https://facebook.github.io/stetho/) and [Flipper](https://github.com/facebook/flipper): inspecting and updating values in a running app, now for SharedPreferences and Jetpack DataStore.
 
-- Automatically discover Preferences DataStore and persisted SharedPreferences
-- Browse, search, and edit Preferences, SharedPreferences, and registered Proto DataStore instances
-- Track store changes and update the application's actual instances through official APIs
+- Automatically discover supported Preferences DataStore and persisted SharedPreferences instances ([support scope](docs/en/compatibility.md))
+- Browse, search, and edit supported Preferences, SharedPreferences, and registered Proto DataStore instances
+- Track supported store changes and update the application's actual instances through official APIs
 
 The SDK is added only to supported debuggable variants and leaves release variants untouched. It does not send store keys, values, or schemas to external servers, and adds no internet communication, telemetry, or Android network permission. Device communication is limited to an authenticated local connection over ADB forwarding.
 
@@ -33,6 +33,8 @@ Add the latest stable DataStore Inspector SDK release to this Android project.
 ```
 
 ### Configure manually
+
+The consumer project's dependency repositories must include `mavenCentral()` because the Plugin does not add repositories.
 
 With Version Catalog:
 
@@ -80,6 +82,7 @@ Build and run a debuggable variant, then select the application in DataStore Ins
 ## Learn more
 
 - [Compatibility and known limitations](docs/en/compatibility.md)
+- [API stability and versioning](docs/en/api-stability.md)
 - [What the Gradle Plugin changes](docs/en/what-is-injected.md)
 - [Custom DataStore inspection](docs/en/custom-datastore.md)
 - [Security](docs/en/security.md) / [Privacy](docs/en/privacy.md)

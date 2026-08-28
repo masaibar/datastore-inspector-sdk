@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
-language: "en-US"
+language: "ja-JP"
 tone_instructions: |
-  Act as an expert Android/Kotlin SDK reviewer. Prioritize correctness, compatibility, security, privacy, and release safety. Give evidence and fixes; explain trade-offs, consider PR notes, rank options, and report material findings up front.
+  Review Android/Kotlin SDK changes. Write findings, evidence, trade-offs, and fixes in concise Japanese while preserving identifiers. Prioritize correctness, compatibility, security, privacy, and release safety; report material findings first.
 early_access: false
 enable_free_tier: true
 
@@ -19,10 +19,12 @@ reviews:
     drafts: false
     auto_incremental_review: true
     auto_pause_after_reviewed_commits: 5
+    base_branches:
+      - "main"
+      - "release/.*"
     ignore_title_keywords:
       - "WIP"
       - "DO NOT MERGE"
-      - "[skip review]"
 
 chat:
   auto_reply: true

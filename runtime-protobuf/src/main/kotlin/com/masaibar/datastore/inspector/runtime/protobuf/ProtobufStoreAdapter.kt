@@ -18,6 +18,7 @@ import com.masaibar.datastore.inspector.runtime.core.AdapterObservation
 import com.masaibar.datastore.inspector.runtime.core.AdapterResolution
 import com.masaibar.datastore.inspector.runtime.core.AdapterSnapshot
 import com.masaibar.datastore.inspector.runtime.core.AdapterWriteResult
+import com.masaibar.datastore.inspector.runtime.core.InternalDataStoreInspectorApi
 import com.masaibar.datastore.inspector.runtime.core.StoreAdapter
 import com.masaibar.datastore.inspector.runtime.core.StoreAdapterFactory
 import com.masaibar.datastore.inspector.runtime.core.StoreCandidate
@@ -29,9 +30,12 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-public class ProtobufStoreAdapterFactory(
-  private val schemaIndex: VerifiedSchemaIndex? = null
+@InternalDataStoreInspectorApi
+public class ProtobufStoreAdapterFactory private constructor(
+  private val schemaIndex: VerifiedSchemaIndex?
 ) : StoreAdapterFactory {
+  public constructor() : this(schemaIndex = null)
+
   override val providerId: String = "protobuf-lite-v1"
 
   override fun initialize(context: Context): StoreAdapterFactory {
@@ -43,7 +47,7 @@ public class ProtobufStoreAdapterFactory(
         runCatching { context.assets.open(path).use { it.readBytes() } }.getOrNull()
       }
     }.getOrNull()
-    return ProtobufStoreAdapterFactory(loaded)
+    return ProtobufStoreAdapterFactory(schemaIndex = loaded)
   }
 
   @Suppress("UNCHECKED_CAST")
@@ -65,7 +69,7 @@ public class ProtobufStoreAdapterFactory(
   }
 }
 
-public class ProtobufStoreAdapter(
+internal class ProtobufStoreAdapter(
   private val store: DataStore<MessageLite>,
   private val schemaEntry: VerifiedSchemaEntry
 ) : StoreAdapter {

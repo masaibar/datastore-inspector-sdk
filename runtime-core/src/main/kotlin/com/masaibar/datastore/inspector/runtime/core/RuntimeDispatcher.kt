@@ -16,6 +16,7 @@ import com.masaibar.datastore.inspector.protocol.WriteRequest
 import com.masaibar.datastore.inspector.protocol.WriteResultResponse
 import kotlinx.coroutines.CancellationException
 
+@InternalDataStoreInspectorApi
 public class RuntimeDispatcher(private val stores: RuntimeStoreService) {
   internal fun observeChanges(
     context: RuntimeConnectionContext,

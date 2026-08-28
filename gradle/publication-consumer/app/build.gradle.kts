@@ -3,6 +3,13 @@ plugins {
     id("com.masaibar.datastore-inspector")
 }
 
+dataStoreInspector {
+    schemaEntry(
+        generatedJvmClassName = "com.example.settings.UserSettings",
+        rootMessageFullName = "example.settings.UserSettings",
+    )
+}
+
 val publicationGroup =
     providers.gradleProperty("publicationGroup")
         .orNull

@@ -1,5 +1,6 @@
 package com.masaibar.datastore.inspector.protocol
 
+@InternalDataStoreInspectorProtocolApi
 public data class NegotiatedProtocol(
   val version: ProtocolVersion,
   val capabilities: Set<String>
@@ -10,6 +11,7 @@ internal enum class ResponseValidationDirection {
   DECODE
 }
 
+@InternalDataStoreInspectorProtocolApi
 public object ProtocolNegotiation {
   public fun negotiate(
     local: ProtocolVersion,
@@ -59,6 +61,7 @@ public object ProtocolNegotiation {
     }
 }
 
+@InternalDataStoreInspectorProtocolApi
 public object ProtocolValidator {
   public fun validate(envelope: RequestEnvelope) {
     validateIdentifier(envelope.requestId, ProtocolLimits.MAX_REQUEST_ID_UTF8_BYTES, "requestId")

@@ -10,9 +10,9 @@
 
 DataStore Inspectorは、今はなき[Stetho](https://facebook.github.io/stetho/)や[Flipper](https://github.com/facebook/flipper)が提供してくれていた、実行中のアプリの値を確認・更新できるという素晴らしい開発者体験を、SharedPreferencesとJetpack DataStore向けに取り戻したいという思いから生まれました。
 
-- Preferences DataStoreと永続化済みSharedPreferencesを自動検出
-- Preferences、SharedPreferences、登録したProto DataStoreを一覧・検索・編集
-- Storeの変更を追跡し、アプリが使うinstanceを公式API経由で更新
+- 対応するPreferences DataStoreと永続化済みSharedPreferencesを自動検出（[対応範囲](docs/compatibility.md)）
+- 対応するPreferences、SharedPreferences、登録したProto DataStoreを一覧・検索・編集
+- 対応するStoreの変更を追跡し、アプリが使うinstanceを公式API経由で更新
 
 SDKは対応するdebuggable variantだけへ追加され、release variantは変更しません。Storeのkey、value、schemaを外部サーバーへ送信せず、internet通信、telemetry、Android network permissionも追加しません。端末との通信はADB forwardを通した認証済みローカル接続に限定します。
 
@@ -33,6 +33,8 @@ Android projectを開き、次のpromptをcoding agentへ渡します。
 ```
 
 ### 手動で設定する
+
+Pluginはrepositoryを追加しないため、consumer projectのdependency repositoryに`mavenCentral()`が必要です。
 
 Version Catalogを使う場合:
 
@@ -80,6 +82,7 @@ debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorか
 ## 詳細
 
 - [対応範囲と既知制限](docs/compatibility.md)
+- [APIの安定性とversioning](docs/api-stability.md)
 - [Gradle Pluginが変更する内容](docs/what-is-injected.md)
 - [Custom DataStoreの検査](docs/custom-datastore.md)
 - [セキュリティ](docs/security.md)／[プライバシー](docs/privacy.md)
