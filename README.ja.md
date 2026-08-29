@@ -28,7 +28,7 @@ Android projectを開き、次のpromptをcoding agentへ渡します。
 - GitHub Releasesでdraft／prereleaseではない最新versionを探し、同じversionがGradle Plugin PortalとMaven Centralで公開済みであることを確認してexact versionへ固定してください。確認できなければ推測せず私へ質問してください。
 - 既存のGradle構成に合わせ、com.masaibar.datastore-inspector PluginをAndroid application moduleだけへ適用してください。
 - Runtime artifactを手動追加せず、Gradle／AGP／Kotlin／Android SDKのversionや無関係なファイルを変更しないでください。
-- Proto schema mappingを既定では追加しないでください。descriptorを取得できるschemaで自動mappingを利用できない場合は、generated message classと完全修飾Proto message名を推測せず私へ確認してください。
+- Proto schema mappingを既定では追加しないでください。対象のProto schemaが自動mappingの範囲外なら、generated classと完全修飾Proto message名を推測せず私へ確認してください。
 - 対象moduleの最小debug buildで検証し、変更ファイルと結果を報告してください。
 ```
 
@@ -66,24 +66,11 @@ PluginはAndroid application moduleだけへ適用してください。必要な
 
 ### Proto DataStore
 
-対応するProto DataStoreに追加設定は不要です。Pluginはapplicationと到達可能なfirst-party Android project moduleから収集したdescriptorを使い、Proto2／Proto3のJava Lite messageを自動mappingします。`java_package`、`java_outer_classname`、`java_multiple_files`、nested message、default outer class名の衝突に対応します。
-
-descriptorを収集できない外部AAR／JAR内だけのschema、独自code generator、full Java protobuf runtime、Edition 2024以降、generated class名を難読化するdebuggable variantは自動mappingの対象外です。詳しくは[対応範囲](docs/compatibility.md)を参照してください。
-
-descriptorを取得できる一方で自動命名の対応範囲外となる場合は、Stable APIの`schemaEntry`を明示mappingとして利用できます。
-
-```kotlin
-dataStoreInspector {
-  schemaEntry(
-    generatedJvmClassName = "com.example.settings.proto.UserSettings",
-    rootMessageFullName = "example.settings.UserSettings"
-  )
-}
-```
-
-`schemaEntry`は不足しているdescriptorを供給しないため、外部binary内だけに存在するschemaを対応済みにはできません。
+対応するProto2／Proto3 Java Lite DataStoreはschema登録不要で、Pluginを適用するだけです。
 
 debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorからapplicationを選びます。実行例は[`sample-app`](sample-app)を参照してください。
+
+対応構成、制限、`schemaEntry`による明示mappingは[対応範囲](docs/compatibility.md)を参照してください。
 
 ## 詳細
 

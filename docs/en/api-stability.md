@@ -2,7 +2,9 @@
 
 English | [日本語](../api-stability.md)
 
-The only Stable consumer APIs in DataStore Inspector SDK are the Gradle Plugin ID `com.masaibar.datastore-inspector`, the `dataStoreInspector` extension, and the explicit `schemaEntry` override for descriptor-backed Proto schemas outside automatic mapping. Do not add Runtime artifacts directly or call Runtime or Protocol classes from application code.
+The Stable consumer APIs are the Gradle Plugin ID `com.masaibar.datastore-inspector`, the `dataStoreInspector` extension, and `schemaEntry`.
+
+Use `schemaEntry` to map a Proto schema whose descriptor is collected but whose name is outside automatic mapping. Do not add Runtime artifacts directly or call Runtime or Protocol classes from application code.
 
 ## Classifications
 
