@@ -2,7 +2,7 @@
 
 [English](en/api-stability.md) | 日本語
 
-DataStore Inspector SDKの利用者向けStable APIは、Gradle Plugin ID `com.masaibar.datastore-inspector`、`dataStoreInspector` extension、Proto登録用の`schemaEntry`だけです。Runtime artifactを直接追加したり、Runtime／Protocolのclassをアプリから呼び出したりしないでください。
+DataStore Inspector SDKの利用者向けStable APIは、Gradle Plugin ID `com.masaibar.datastore-inspector`、`dataStoreInspector` extension、自動mapping対象外のdescriptor-backed Proto向け明示override `schemaEntry`だけです。Runtime artifactを直接追加したり、Runtime／Protocolのclassをアプリから呼び出したりしないでください。
 
 ## 区分
 

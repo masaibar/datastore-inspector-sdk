@@ -12,7 +12,7 @@ For supported debuggable variants, the Gradle Plugin:
 - instruments supported `DataStoreFactory` / `MultiProcessDataStoreFactory`, `FileStorage` /
   `OkioStorage`, typed delegate, and kotlinx.serialization call sites
 - generates an optional debug-only Custom codec binding provider
-- generates Proto descriptor assets and a schema index when applicable
+- resolves JVM class mappings from reachable first-party Proto descriptors and generates descriptor assets plus schema index v1 when applicable
 - adds keep rules required by debuggable minified fixtures
 
 For non-debuggable variants, it must not:
