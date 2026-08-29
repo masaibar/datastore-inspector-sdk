@@ -61,7 +61,7 @@ dataStoreInspector {
 - Custom serializerのraw binaryを推測または直接編集すること
 - descriptorを収集できない外部AAR／JAR内だけのProto schema
 - Google protobuf Gradle Pluginを使わない独自code generatorとfull Java protobuf runtime
-- Edition 2024以降のJava feature option
+- すべてのEditions schema
 - minifyによりgenerated Proto class名が変わるdebuggable variant
 
 自動計装対象外のAndroid経路には、利用者が保持する同じDataStore instanceを渡すdebug専用`registerDataStoreInspectorFallback`を用意しています。呼び出し側は`@OptIn(ExperimentalDataStoreInspectorApi::class)`でexperimental APIの利用を明示します。sampleと初期保証delegate経路はfallbackを使いません。

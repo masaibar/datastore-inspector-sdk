@@ -67,7 +67,7 @@ dataStoreInspector {
 - Guessing or directly editing a Custom Serializer's raw binary representation
 - Proto schemas available only in external AARs or JARs without collected descriptors
 - Custom code generators that do not use the Google protobuf Gradle Plugin, and the full Java protobuf runtime
-- Java feature options from Editions 2024 or later
+- All Editions schemas
 - Debuggable variants whose minification changes generated Proto class names
 
 For Android paths outside automatic instrumentation, a debug-only `registerDataStoreInspectorFallback` API accepts the same DataStore instance held by the application. Callers must opt in with `@OptIn(ExperimentalDataStoreInspectorApi::class)`. The sample and initially guaranteed delegate paths do not use this fallback.

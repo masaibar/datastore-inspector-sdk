@@ -236,6 +236,13 @@ internal object AndroidVariantIntegration {
         schemaTask.configure { task ->
           task.dependsOn("${protobufProject.path}:$exactTaskName")
           task.descriptorFragments.from(descriptor)
+          task.protoSources.from(
+            protobufProject.tasks.named(exactTaskName).map { generateProtoTask ->
+              generateProtoTask.javaClass.methods
+                .first { it.name == "getSourceDirs" && it.parameterCount == 0 }
+                .invoke(generateProtoTask)
+            }
+          )
         }
         attachedProjects += "${protobufProject.path}($sourceVariant)"
       }

@@ -185,6 +185,10 @@ public abstract class GenerateDataStoreInspectorSchemaTask : DefaultTask() {
   @get:PathSensitive(PathSensitivity.NONE)
   public abstract val descriptorFragments: ConfigurableFileCollection
 
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  public abstract val protoSources: ConfigurableFileCollection
+
   @get:Input
   public abstract val schemaMappings: ListProperty<String>
 
@@ -204,6 +208,7 @@ public abstract class GenerateDataStoreInspectorSchemaTask : DefaultTask() {
     }
     val entryCount = SchemaIndexProducer.produce(
       fragments = fragments.map { it.readBytes() },
+      sourceProtoPaths = protoSources.files.map { it.invariantSeparatorsPath },
       explicitMappings = explicitMappings,
       outputDirectory = outputDirectory.get().asFile
     )
@@ -226,6 +231,7 @@ internal object SchemaIndexProducer {
 
   fun produce(
     fragments: List<ByteArray>,
+    sourceProtoPaths: List<String>,
     explicitMappings: List<String>,
     outputDirectory: java.io.File
   ): Int {
@@ -267,9 +273,20 @@ internal object SchemaIndexProducer {
           mapping.rootMessageFullName
       }
     }
+    val firstPartyDescriptorNames =
+      resolveFirstPartyDescriptorNames(
+        sourceProtoPaths = sourceProtoPaths,
+        descriptorNames = filesByName.keys
+      )
+    val firstPartyDescriptorSet =
+      FileDescriptorSet.newBuilder()
+        .addAllFile(
+          descriptorSet.fileList.filter { it.name in firstPartyDescriptorNames }
+        )
+        .build()
     val mappings =
       mergeMappings(
-        automaticMappings = ProtoJvmClassNameResolver.resolve(descriptorSet),
+        automaticMappings = ProtoJvmClassNameResolver.resolve(firstPartyDescriptorSet),
         explicitMappings = parsedExplicitMappings
       )
 
@@ -346,6 +363,19 @@ internal object SchemaIndexProducer {
         }
         addMessages(file.`package`, file.messageTypeList)
       }
+    }
+
+  private fun resolveFirstPartyDescriptorNames(
+    sourceProtoPaths: List<String>,
+    descriptorNames: Set<String>
+  ): Set<String> =
+    sourceProtoPaths.mapTo(linkedSetOf()) { sourcePath ->
+      descriptorNames
+        .filter { descriptorName ->
+          sourcePath == descriptorName || sourcePath.endsWith("/$descriptorName")
+        }
+        .maxByOrNull(String::length)
+        ?: error("No descriptor was generated for Proto source: $sourcePath")
     }
 
   private fun parseMapping(mapping: String): SchemaMapping {

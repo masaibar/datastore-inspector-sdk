@@ -94,11 +94,21 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
 
           val entryCount = SchemaIndexProducer.produce(
             fragments = listOf(settingsFragment, commonFragment),
+            sourceProtoPaths =
+              listOf(
+                "/project/src/main/proto/user_settings.proto",
+                "/project/src/main/proto/common/profile.proto"
+              ),
             explicitMappings = emptyList(),
             outputDirectory = output
           )
           SchemaIndexProducer.produce(
             fragments = listOf(commonFragment, settingsFragment),
+            sourceProtoPaths =
+              listOf(
+                "/project/src/main/proto/common/profile.proto",
+                "/project/src/main/proto/user_settings.proto"
+              ),
             explicitMappings = emptyList(),
             outputDirectory = reversedOutput
           )
@@ -130,6 +140,7 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
 
           val entryCount = SchemaIndexProducer.produce(
             fragments = listOf(descriptorFragment(settings)),
+            sourceProtoPaths = listOf("/project/src/main/proto/user_settings.proto"),
             explicitMappings = listOf("dev.example.UserSettings=sample.UserSettings"),
             outputDirectory = output
           )
@@ -156,11 +167,55 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
           shouldThrow<IllegalArgumentException> {
             SchemaIndexProducer.produce(
               fragments = listOf(descriptorFragment(settings, profile)),
+              sourceProtoPaths =
+                listOf(
+                  "/project/src/main/proto/user_settings.proto",
+                  "/project/src/main/proto/profile.proto"
+                ),
               explicitMappings = listOf("dev.example.UserSettings=sample.Profile"),
               outputDirectory = output
             )
           }.message.orEmpty() shouldContain
             "dev.example.UserSettings -> [sample.Profile, sample.UserSettings]"
+        }
+      }
+
+      context("when a first-party Proto source imports an external Proto file") {
+        val imported =
+          FileDescriptorProto.newBuilder()
+            .setName("external/profile.proto")
+            .setPackage("external")
+            .setSyntax("proto3")
+            .setOptions(
+              FileOptions.newBuilder()
+                .setJavaPackage("external.generated")
+                .setJavaMultipleFiles(true)
+            )
+            .addMessageType(DescriptorProto.newBuilder().setName("Profile"))
+            .build()
+        val settings =
+          javaLiteMessageDescriptor().toBuilder()
+            .addDependency("external/profile.proto")
+            .build()
+        val output = Files.createTempDirectory("datastore-inspector-schema-import").toFile()
+
+        it("keeps the imported descriptor but maps only the first-party source") {
+          val entryCount =
+            SchemaIndexProducer.produce(
+              fragments = listOf(descriptorFragment(imported, settings)),
+              sourceProtoPaths = listOf("/project/src/main/proto/user_settings.proto"),
+              explicitMappings = emptyList(),
+              outputDirectory = output
+            )
+
+          val index = output.resolve("datastore-inspector/schema-index.json").readText()
+          val digest = Regex("[0-9a-f]{64}").find(index)?.value
+          val descriptor = output.resolve("datastore-inspector/schemas/$digest.desc")
+          entryCount shouldBe 1
+          index shouldContain "dev.example.UserSettings"
+          (index.contains("external.generated.Profile")) shouldBe false
+          (FileDescriptorSet.parseFrom(descriptor.readBytes()).fileList.map { it.name }) shouldBe
+            listOf("external/profile.proto", "user_settings.proto")
         }
       }
     }
