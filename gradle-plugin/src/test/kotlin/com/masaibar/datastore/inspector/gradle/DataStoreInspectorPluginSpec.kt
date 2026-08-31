@@ -218,6 +218,30 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
             listOf("external/profile.proto", "user_settings.proto")
         }
       }
+
+      context("when detecting the Proto Java generation mode") {
+        it("accepts a java builtin that explicitly enables lite") {
+          ProtoTaskSchemaSources.hasJavaLiteBuiltin(
+            mapOf(
+              "builtinsForCaching.java\$0.name" to "java",
+              "builtinsForCaching.java\$0.options" to listOf("lite")
+            )
+          ) shouldBe true
+        }
+
+        it("rejects a java builtin without the lite option") {
+          ProtoTaskSchemaSources.hasJavaLiteBuiltin(
+            mapOf(
+              "builtinsForCaching.java\$0.name" to "java",
+              "builtinsForCaching.java\$0.options" to emptyList<String>()
+            )
+          ) shouldBe false
+        }
+
+        it("rejects an unknown task input shape") {
+          ProtoTaskSchemaSources.hasJavaLiteBuiltin(emptyMap()) shouldBe false
+        }
+      }
     }
   }
 

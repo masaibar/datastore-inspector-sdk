@@ -7,6 +7,7 @@ import com.android.build.api.variant.ApplicationAndroidComponentsExtension
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
@@ -238,9 +239,7 @@ internal object AndroidVariantIntegration {
           task.descriptorFragments.from(descriptor)
           task.protoSources.from(
             protobufProject.tasks.named(exactTaskName).map { generateProtoTask ->
-              generateProtoTask.javaClass.methods
-                .first { it.name == "getSourceDirs" && it.parameterCount == 0 }
-                .invoke(generateProtoTask)
+              ProtoTaskSchemaSources.javaLiteSourceDirsOrEmpty(generateProtoTask)
             }
           )
         }
@@ -379,6 +378,29 @@ internal object AndroidVariantIntegration {
     } ?: "${ArtifactCoordinates.GROUP}:$artifact:${ArtifactCoordinates.VERSION}"
     project.dependencies.add(configuration, notation)
   }
+}
+
+internal object ProtoTaskSchemaSources {
+  fun javaLiteSourceDirsOrEmpty(task: Task): Any {
+    if (!hasJavaLiteBuiltin(task.inputs.properties)) return emptyList<File>()
+    return task.javaClass.methods
+      .firstOrNull { it.name == "getSourceDirs" && it.parameterCount == 0 }
+      ?.invoke(task)
+      ?: emptyList<File>()
+  }
+
+  fun hasJavaLiteBuiltin(inputProperties: Map<String, Any?>): Boolean =
+    inputProperties.entries
+      .asSequence()
+      .filter { (name, value) ->
+        name.startsWith("builtinsForCaching.") &&
+          name.endsWith(".name") &&
+          value == "java"
+      }.map { (name) -> name.removeSuffix(".name") }
+      .any { prefix ->
+        (inputProperties["$prefix.options"] as? Iterable<*>)
+          ?.any { it == "lite" } == true
+      }
 }
 
 internal data class DependencySignals(
