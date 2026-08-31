@@ -178,6 +178,19 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
           }.message.orEmpty() shouldContain
             "dev.example.UserSettings -> [sample.Profile, sample.UserSettings]"
         }
+
+        it("rejects an invalid explicit mapping at the schema producer boundary") {
+          val output = Files.createTempDirectory("datastore-inspector-schema-invalid").toFile()
+
+          shouldThrow<IllegalArgumentException> {
+            SchemaIndexProducer.produce(
+              fragments = listOf(descriptorFragment(javaLiteMessageDescriptor())),
+              sourceProtoPaths = emptyList(),
+              explicitMappings = listOf("dev.example.\"Invalid=sample.UserSettings"),
+              outputDirectory = output
+            )
+          }.message.orEmpty() shouldContain "valid generated JVM and Proto message names"
+        }
       }
 
       context("when a first-party Proto source imports an external Proto file") {

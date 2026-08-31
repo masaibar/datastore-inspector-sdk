@@ -36,11 +36,13 @@ Android projectを開き、次のpromptをcoding agentへ渡します。
 
 Pluginはrepositoryを追加しないため、consumer projectのdependency repositoryに`mavenCentral()`が必要です。
 
+`<latest-stable-version>`は、Gradle Plugin PortalとMaven Centralの両方で公開済みの最新exact versionへ置き換えてください。
+
 Version Catalogを使う場合:
 
 ```toml
 [versions]
-datastore-inspector = "1.1.0"
+datastore-inspector = "<latest-stable-version>"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
@@ -58,7 +60,7 @@ Version Catalogを使わない場合:
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "1.1.0"
+  id("com.masaibar.datastore-inspector") version "<latest-stable-version>"
 }
 ```
 

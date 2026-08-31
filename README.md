@@ -36,11 +36,13 @@ Add the latest stable DataStore Inspector SDK release to this Android project.
 
 The consumer project's dependency repositories must include `mavenCentral()` because the Plugin does not add repositories.
 
+Replace `<latest-stable-version>` with the newest exact version published to both the Gradle Plugin Portal and Maven Central.
+
 With Version Catalog:
 
 ```toml
 [versions]
-datastore-inspector = "1.1.0"
+datastore-inspector = "<latest-stable-version>"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
@@ -58,7 +60,7 @@ Without Version Catalog:
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "1.1.0"
+  id("com.masaibar.datastore-inspector") version "<latest-stable-version>"
 }
 ```
 

@@ -19,6 +19,8 @@ import org.gradle.api.tasks.TaskAction
 import java.security.MessageDigest
 import javax.inject.Inject
 
+private val SCHEMA_MAPPING_PART: Regex = Regex("^[A-Za-z_][A-Za-z0-9_.$]*$")
+
 @StableDataStoreInspectorGradleApi
 public abstract class DataStoreInspectorExtension @Inject constructor(objects: ObjectFactory) {
   internal val schemaMappings: ListProperty<String> =
@@ -28,10 +30,10 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
 
   @StableDataStoreInspectorGradleApi
   public fun schemaEntry(generatedJvmClassName: String, rootMessageFullName: String) {
-    require(MAPPING_PART.matches(generatedJvmClassName)) {
+    require(SCHEMA_MAPPING_PART.matches(generatedJvmClassName)) {
       "generated JVM class名が不正です: $generatedJvmClassName"
     }
-    require(MAPPING_PART.matches(rootMessageFullName)) {
+    require(SCHEMA_MAPPING_PART.matches(rootMessageFullName)) {
       "proto完全修飾message名が不正です: $rootMessageFullName"
     }
     schemaMappings.add("$generatedJvmClassName=$rootMessageFullName")
@@ -60,7 +62,6 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
   }
 
   private companion object {
-    val MAPPING_PART: Regex = Regex("^[A-Za-z_][A-Za-z0-9_.$]*$")
     val CLASS_NAME: Regex =
       Regex("^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+$")
   }
@@ -380,8 +381,8 @@ internal object SchemaIndexProducer {
 
   private fun parseMapping(mapping: String): SchemaMapping {
     val parts = mapping.split('=', limit = 2)
-    require(parts.size == 2 && parts.all(String::isNotBlank)) {
-      "Schema mapping must contain a generated JVM class and a Proto message name."
+    require(parts.size == 2 && parts.all(SCHEMA_MAPPING_PART::matches)) {
+      "Schema mapping must contain valid generated JVM and Proto message names."
     }
     return SchemaMapping(
       generatedJvmClassName = parts[0],
