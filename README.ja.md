@@ -10,8 +10,8 @@
 
 DataStore Inspectorは、今はなき[Stetho](https://facebook.github.io/stetho/)や[Flipper](https://github.com/facebook/flipper)が提供してくれていた、実行中のアプリの値を確認・更新できるという素晴らしい開発者体験を、SharedPreferencesとJetpack DataStore向けに取り戻したいという思いから生まれました。
 
-- 対応するPreferences DataStoreと永続化済みSharedPreferencesを自動検出（[対応範囲](docs/compatibility.md)）
-- 対応するPreferences、SharedPreferences、登録したProto DataStoreを一覧・検索・編集
+- 対応するPreferences DataStore、Proto DataStore、永続化済みSharedPreferencesを自動検出（[対応範囲](docs/compatibility.md)）
+- 対応するPreferences、Proto、SharedPreferencesの値を一覧・検索・編集
 - 対応するStoreの変更を追跡し、アプリが使うinstanceを公式API経由で更新
 
 SDKは対応するdebuggable variantだけへ追加され、release variantは変更しません。Storeのkey、value、schemaを外部サーバーへ送信せず、internet通信、telemetry、Android network permissionも追加しません。端末との通信はADB forwardを通した認証済みローカル接続に限定します。
@@ -28,7 +28,7 @@ Android projectを開き、次のpromptをcoding agentへ渡します。
 - GitHub Releasesでdraft／prereleaseではない最新versionを探し、同じversionがGradle Plugin PortalとMaven Centralで公開済みであることを確認してexact versionへ固定してください。確認できなければ推測せず私へ質問してください。
 - 既存のGradle構成に合わせ、com.masaibar.datastore-inspector PluginをAndroid application moduleだけへ適用してください。
 - Runtime artifactを手動追加せず、Gradle／AGP／Kotlin／Android SDKのversionや無関係なファイルを変更しないでください。
-- Proto schema mappingが必要なら、generated message classと完全修飾Proto message名を推測せず私へ確認してください。
+- Proto schema mappingを既定では追加しないでください。対象のProto schemaが自動mappingの範囲外なら、generated classと完全修飾Proto message名を推測せず私へ確認してください。
 - 対象moduleの最小debug buildで検証し、変更ファイルと結果を報告してください。
 ```
 
@@ -36,11 +36,13 @@ Android projectを開き、次のpromptをcoding agentへ渡します。
 
 Pluginはrepositoryを追加しないため、consumer projectのdependency repositoryに`mavenCentral()`が必要です。
 
+`<latest-stable-version>`は、Gradle Plugin PortalとMaven Centralの両方で公開済みの最新exact versionへ置き換えてください。
+
 Version Catalogを使う場合:
 
 ```toml
 [versions]
-datastore-inspector = "1.0.0"
+datastore-inspector = "<latest-stable-version>"
 
 [plugins]
 datastore-inspector = { id = "com.masaibar.datastore-inspector", version.ref = "datastore-inspector" }
@@ -58,7 +60,7 @@ Version Catalogを使わない場合:
 ```kotlin
 plugins {
   id("com.android.application")
-  id("com.masaibar.datastore-inspector") version "1.0.0"
+  id("com.masaibar.datastore-inspector") version "<latest-stable-version>"
 }
 ```
 
@@ -66,18 +68,11 @@ PluginはAndroid application moduleだけへ適用してください。必要な
 
 ### Proto DataStore
 
-Proto DataStoreを使う場合だけ、generated message classと完全修飾Proto message名を登録します。
-
-```kotlin
-dataStoreInspector {
-  schemaEntry(
-    "com.example.settings.proto.UserSettings",
-    "example.settings.UserSettings"
-  )
-}
-```
+対応するProto2／Proto3 Java Lite DataStoreはschema登録不要で、Pluginを適用するだけです。
 
 debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorからapplicationを選びます。実行例は[`sample-app`](sample-app)を参照してください。
+
+対応構成、制限、`schemaEntry`による明示mappingは[対応範囲](docs/compatibility.md)を参照してください。
 
 ## 詳細
 

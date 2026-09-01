@@ -12,7 +12,7 @@ Gradle Pluginは、対応するdebuggable variantに対して次の変更を行�
 - 対応する`DataStoreFactory`／`MultiProcessDataStoreFactory`、`FileStorage`／`OkioStorage`、
   typed delegate、kotlinx.serializationのcall siteを計装する
 - 任意のデバッグ専用Custom codec binding providerを生成する
-- 該当する場合、Proto descriptor assetとschema indexを生成する
+- 該当する場合、到達可能なfirst-party Proto descriptorからJVM class mappingを自動解決し、descriptor assetとschema index v1を生成する
 - debuggableなminified fixtureに必要なkeep ruleを追加する
 
 non-debuggable variantに対しては、次の変更を行ってはいけません。

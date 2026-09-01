@@ -22,6 +22,33 @@
 - main/default processのcredential-protected SharedPreferences
   （`String`／`Int`／`Long`／`Float`／`Boolean`／`Set<String>`）
 
+### Proto schemaの自動mapping
+
+次の条件を満たすProto schemaを自動mappingします。
+
+- 非minifyのdebuggable variant
+- applicationまたは到達可能なfirst-party Android project moduleのdescriptor
+- Google protobuf Gradle Pluginが生成するProto2／Proto3 Java Lite message
+- `java_package`、`java_outer_classname`、`java_multiple_files`、nested message、default outer class名の衝突
+
+Kotlin protobuf DSLを併用しても、DataStoreのvalueが同じgenerated Java Lite messageなら対象です。
+
+#### 明示mapping
+
+自動命名の対象外でもdescriptorを収集できる場合は、Stable APIの`schemaEntry`で明示mappingできます。
+
+```kotlin
+dataStoreInspector {
+  schemaEntry(
+    generatedJvmClassName = "com.example.settings.proto.UserSettings",
+    rootMessageFullName = "example.settings.UserSettings"
+  )
+}
+```
+
+- 同じgenerated classに異なるmessageを自動・明示mappingした場合はbuildを失敗させる
+- `schemaEntry`はdescriptorを供給しないため、descriptorのない外部binaryには利用できない
+
 ## 初期版の対象外
 
 - `debuggable`ではないvariant
@@ -32,6 +59,10 @@
 - iOSなどAndroid以外のKMP target
 - 対応済み作成call siteを通らないCustom DataStore、実instance／Serializerを取得できない経路
 - Custom serializerのraw binaryを推測または直接編集すること
+- descriptorを収集できない外部AAR／JAR内だけのProto schema
+- Google protobuf Gradle Pluginを使わない独自code generatorとfull Java protobuf runtime
+- すべてのEditions schema
+- minifyによりgenerated Proto class名が変わるdebuggable variant
 
 自動計装対象外のAndroid経路には、利用者が保持する同じDataStore instanceを渡すdebug専用`registerDataStoreInspectorFallback`を用意しています。呼び出し側は`@OptIn(ExperimentalDataStoreInspectorApi::class)`でexperimental APIの利用を明示します。sampleと初期保証delegate経路はfallbackを使いません。
 
