@@ -109,24 +109,43 @@ shasum -a 256 -c \
   build/public-source/datastore-inspector-sdk-public-source.tar.gz.sha256
 ```
 
+## Branch workflow
+
+- At the start of a release cycle, create `release/<version>` from the latest public `main`.
+- Target every feature or fix pull request for that version at `release/<version>`, and merge it only
+  after CI and review succeed. Individual pull requests may use squash merge.
+- Keep exactly one pull request from `release/<version>` to public `main`, titled `Release <version>`,
+  and update its included-change list as individual pull requests merge. CodeRabbit does not review
+  the same changes again in this final pull request because they were reviewed before entering the
+  release branch.
+- Merge the final release pull request with GitHub's `Create a merge commit`. Do not use `Squash and
+  merge` or `Rebase and merge`: they do not preserve the release branch pull-request commits as
+  ancestors of `main`, so generated release notes can omit the actual change pull requests.
+- Do not merge ordinary features or fixes directly into public `main`. Aggregate changes for a
+  published version on its release branch. Limit exceptions to the bootstrap procedure below when no
+  release pull request exists.
+
 ## Release procedure
 
 1. On a `release/<version>` branch, change `version` in `gradle/artifact-coordinates.properties` to
    an unpublished value that does not end in `-SNAPSHOT`.
-2. Review CI and publication metadata in a pull request targeting the public `main`. For a
-   non-SNAPSHOT release candidate,
-   optionally provide valid Plugin Portal credentials through environment variables and run
-   `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`.
-3. Merge the pull request into public `main`. The `Create SDK Release` workflow validates the branch
-   metadata and merge commit from the pull request event, then creates an annotated `v<version>` tag
-   and a GitHub Release.
-4. Manually run `Publish SDK` from public `main`, using the same `version` and target `all`. The
+2. Merge individual pull requests into `release/<version>`, then inspect CI, publication metadata,
+   and the included-change list in the final pull request to public `main`. For a non-SNAPSHOT release
+   candidate, optionally provide valid Plugin Portal credentials through environment variables and
+   run `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`.
+3. Merge the final release pull request into public `main` with GitHub's `Create a merge commit`. The
+   `Create SDK Release` workflow validates the pull request branch metadata and merge commit, then
+   creates an annotated `v<version>` tag and a GitHub Release.
+4. Confirm that the GitHub Release's What's Changed section lists the individual feature and fix pull
+   requests since the previous version instead of collapsing them into the final release pull request.
+5. Manually run `Publish SDK` from public `main`, using the same `version` and target `all`. The
    workflow checks out `v<version>` before running the release gates and publishing.
-5. Confirm that the same version is available from Maven Central and the Gradle Plugin Portal.
+6. Confirm that the same version is available from Maven Central and the Gradle Plugin Portal.
 
 Automatic releases apply only to merged pull requests from a `release/<SemVer>` branch in the same
-repository to public `main`. The workflow uses pull request event metadata instead of parsing the
-merge commit message, so it does not depend on the GitHub merge method. It verifies the input against
+repository to public `main`. Tag and GitHub Release creation uses pull request event metadata instead
+of parsing the merge commit message. The branch workflow still requires `Create a merge commit` so
+generated release notes retain the individual pull requests. The workflow verifies the input against
 the source-of-truth version, rejects SNAPSHOT versions, and refuses to move an existing tag that
 points to another commit.
 
