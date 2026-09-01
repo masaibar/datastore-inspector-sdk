@@ -1,0 +1,138 @@
+name: Update Release PR Description
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - "release/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: update-release-pr-${{ github.event.pull_request.base.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-release-pr:
+    name: Update release PR changes
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      RELEASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+    steps:
+      - name: Update included changes
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          release_prs="$RUNNER_TEMP/release-prs.json"
+          merged_prs="$RUNNER_TEMP/merged-prs.json"
+          changes="$RUNNER_TEMP/included-changes.md"
+          current_body="$RUNNER_TEMP/current-body.md"
+          new_section="$RUNNER_TEMP/new-section.md"
+          new_body="$RUNNER_TEMP/new-body.md"
+
+          gh pr list \
+            --base "$DEFAULT_BRANCH" \
+            --head "$RELEASE_BRANCH" \
+            --state open \
+            --limit 2 \
+            --json number \
+            > "$release_prs"
+
+          release_pr_count="$(jq 'length' "$release_prs")"
+          if [[ "$release_pr_count" == "0" ]]; then
+            echo "No open PR from $RELEASE_BRANCH to $DEFAULT_BRANCH was found."
+            exit 0
+          fi
+          if [[ "$release_pr_count" != "1" ]]; then
+            echo "Multiple open PRs from $RELEASE_BRANCH to $DEFAULT_BRANCH were found." >&2
+            exit 1
+          fi
+          release_pr_number="$(jq -r '.[0].number' "$release_prs")"
+
+          gh pr list \
+            --base "$RELEASE_BRANCH" \
+            --state merged \
+            --limit 1000 \
+            --json number,headRefName \
+            --jq 'sort_by(.number)' \
+            > "$merged_prs"
+
+          : > "$changes"
+          while IFS=$'\t' read -r pr_number head_branch; do
+            [[ -n "$pr_number" ]] || continue
+            printf -- '- #%s\n' "$pr_number" >> "$changes"
+            while IFS= read -r child_pr_number; do
+              [[ -n "$child_pr_number" ]] || continue
+              printf -- '  - #%s\n' "$child_pr_number" >> "$changes"
+            done < <(
+              gh pr list \
+                --base "$head_branch" \
+                --state merged \
+                --limit 1000 \
+                --json number \
+                --jq 'sort_by(.number) | .[].number'
+            )
+          done < <(jq -r '.[] | [.number, .headRefName] | @tsv' "$merged_prs")
+
+          if [[ ! -s "$changes" ]]; then
+            echo "No merged PRs into $RELEASE_BRANCH were found."
+            exit 0
+          fi
+
+          gh pr view "$release_pr_number" --json body --jq '.body // ""' > "$current_body"
+          printf '## 含まれる変更\n\n' > "$new_section"
+          cat "$changes" >> "$new_section"
+
+          section_count="$(grep -c '^## 含まれる変更$' "$current_body" || true)"
+          if (( section_count > 1 )); then
+            echo "The release PR contains multiple Included changes sections." >&2
+            exit 1
+          fi
+
+          if (( section_count == 1 )); then
+            awk -v new_section_file="$new_section" '
+              BEGIN { in_section = 0 }
+              /^## 含まれる変更$/ {
+                in_section = 1
+                while ((getline line < new_section_file) > 0) {
+                  print line
+                }
+                close(new_section_file)
+                next
+              }
+              /^## / && in_section {
+                in_section = 0
+                print ""
+                print
+                next
+              }
+              !in_section { print }
+            ' "$current_body" > "$new_body"
+          else
+            cp "$current_body" "$new_body"
+            if [[ -s "$new_body" ]]; then
+              printf '\n' >> "$new_body"
+            fi
+            cat "$new_section" >> "$new_body"
+          fi
+
+          if cmp -s "$current_body" "$new_body"; then
+            echo "Release PR #$release_pr_number already has the current change list."
+            exit 0
+          fi
+
+          gh pr edit "$release_pr_number" --body-file "$new_body"
+          echo "Updated release PR #$release_pr_number."
