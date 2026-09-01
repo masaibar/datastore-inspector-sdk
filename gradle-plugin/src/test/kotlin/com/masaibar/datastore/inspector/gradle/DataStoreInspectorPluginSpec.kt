@@ -9,6 +9,10 @@ import io.kotest.assertions.withClue
 import io.kotest.core.spec.style.DescribeSpec
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.tasks.InputFiles
+import org.gradle.testfixtures.ProjectBuilder
 import org.gradle.testkit.runner.GradleRunner
 import org.gradle.testkit.runner.TaskOutcome
 import java.io.File
@@ -182,14 +186,34 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
         it("rejects an invalid explicit mapping at the schema producer boundary") {
           val output = Files.createTempDirectory("datastore-inspector-schema-invalid").toFile()
 
-          shouldThrow<IllegalArgumentException> {
+          listOf(
+            "dev.example.\"Invalid=sample.UserSettings",
+            "dev.example.=sample.UserSettings",
+            "dev..example.UserSettings=sample.UserSettings"
+          ).forEach { invalidMapping ->
+            shouldThrow<IllegalArgumentException> {
+              SchemaIndexProducer.produce(
+                fragments = listOf(descriptorFragment(javaLiteMessageDescriptor())),
+                sourceProtoPaths = emptyList(),
+                explicitMappings = listOf(invalidMapping),
+                outputDirectory = output
+              )
+            }.message.orEmpty() shouldContain "valid generated JVM and Proto message names"
+          }
+        }
+
+        it("rejects a Proto source without a matching descriptor") {
+          val output = Files.createTempDirectory("datastore-inspector-schema-mismatch").toFile()
+
+          shouldThrow<IllegalStateException> {
             SchemaIndexProducer.produce(
               fragments = listOf(descriptorFragment(javaLiteMessageDescriptor())),
-              sourceProtoPaths = emptyList(),
-              explicitMappings = listOf("dev.example.\"Invalid=sample.UserSettings"),
+              sourceProtoPaths = listOf("/project/src/main/proto/missing.proto"),
+              explicitMappings = emptyList(),
               outputDirectory = output
             )
-          }.message.orEmpty() shouldContain "valid generated JVM and Proto message names"
+          }.message.orEmpty() shouldContain
+            "No descriptor was generated for Proto source: /project/src/main/proto/missing.proto"
         }
       }
 
@@ -233,6 +257,28 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
       }
 
       context("when detecting the Proto Java generation mode") {
+        it("expands source directories to Proto files") {
+          val projectDir = Files.createTempDirectory("datastore-inspector-proto-sources")
+          val sourceDir = projectDir.resolve("src/main/proto")
+          Files.createDirectories(sourceDir)
+          val protoSource = sourceDir.resolve("settings.proto").apply {
+            writeText("syntax = \"proto3\";")
+          }
+          sourceDir.resolve("ignored.txt").writeText("not a Proto source")
+          val project = ProjectBuilder.builder().withProjectDir(projectDir.toFile()).build()
+          val task =
+            project.tasks.register(
+              "generateDebugProto",
+              FakeGenerateProtoTask::class.java
+            ).get()
+          task.inputs.property("builtinsForCaching.java\$0.name", "java")
+          task.inputs.property("builtinsForCaching.java\$0.options", listOf("lite"))
+          task.sourceDirs.from(sourceDir.toFile())
+
+          ProtoTaskSchemaSources.javaLiteProtoSourceFilesOrEmpty(task).files shouldBe
+            setOf(protoSource.toFile())
+        }
+
         it("accepts a java builtin that explicitly enables lite") {
           ProtoTaskSchemaSources.hasJavaLiteBuiltin(
             mapOf(
@@ -278,4 +324,9 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
         .build()
         .toByteArray()
   }
+}
+
+public abstract class FakeGenerateProtoTask : DefaultTask() {
+  @get:InputFiles
+  public abstract val sourceDirs: ConfigurableFileCollection
 }

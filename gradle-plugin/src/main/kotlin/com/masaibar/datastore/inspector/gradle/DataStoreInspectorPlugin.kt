@@ -19,7 +19,8 @@ import org.gradle.api.tasks.TaskAction
 import java.security.MessageDigest
 import javax.inject.Inject
 
-private val SCHEMA_MAPPING_PART: Regex = Regex("^[A-Za-z_][A-Za-z0-9_.$]*$")
+private val SCHEMA_MAPPING_PART: Regex =
+  Regex("^[A-Za-z_][A-Za-z0-9_$]*(\\.[A-Za-z_][A-Za-z0-9_$]*)*$")
 
 @StableDataStoreInspectorGradleApi
 public abstract class DataStoreInspectorExtension @Inject constructor(objects: ObjectFactory) {
