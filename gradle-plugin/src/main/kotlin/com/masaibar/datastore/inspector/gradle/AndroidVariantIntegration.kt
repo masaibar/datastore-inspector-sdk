@@ -8,6 +8,7 @@ import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
@@ -43,7 +44,6 @@ internal object AndroidVariantIntegration {
     }
     val signals = DependencySignals()
     val observedProjects = linkedSetOf<String>()
-    val debuggableVariants = linkedSetOf<String>()
     val debuggableProjectVariants = linkedMapOf<String, MutableSet<String>>()
     val schemaTasks = linkedMapOf<String, TaskProvider<GenerateDataStoreInspectorSchemaTask>>()
 
@@ -65,8 +65,8 @@ internal object AndroidVariantIntegration {
         report.configure { it.lines.add("variant ${variant.name}: non-debuggable、計装・依存注入なし") }
         return@onVariants
       }
-      debuggableVariants += variant.name
       debuggableProjectVariants.getOrPut(project.path, ::linkedSetOf) += variant.name
+      configureRuntimeDependencies(project, variant.name, signals)
       variant.instrumentation.transformClassesWith(
         DataStoreDelegateVisitorFactory::class.java,
         InstrumentationScope.ALL
@@ -140,12 +140,6 @@ internal object AndroidVariantIntegration {
         schemaTasks = schemaTasks,
         report = report
       )
-      debuggableVariants.forEach { variantName ->
-        val configuration = "${variantName}Implementation"
-        InspectorDependencyPlanner.runtimeArtifacts(signals).forEach { artifact ->
-          addOnce(project, configuration, artifact)
-        }
-      }
       report.configure { task ->
         task.lines.add("reachable first-party projects: ${observedProjects.sorted()}")
         task.lines.add("preferences adapter: ${signals.preferences}")
@@ -300,6 +294,9 @@ internal object AndroidVariantIntegration {
               debuggableProjectVariants,
               report
             )
+            if (dependency.path != candidate.path && dependency.path != rootApplication.path) {
+              rootApplication.evaluationDependsOn(dependency.path)
+            }
           }
         }
         observeExternalDependency(dependency.group, dependency.name, signals)
@@ -366,18 +363,31 @@ internal object AndroidVariantIntegration {
     InspectorDependencyPlanner.observe(group, name, signals)
   }
 
-  private fun addOnce(project: Project, configuration: String, artifact: String) {
-    val dependencies = project.configurations.getByName(configuration).dependencies
+  private fun configureRuntimeDependencies(
+    project: Project,
+    variantName: String,
+    signals: DependencySignals
+  ) {
+    val dependencies =
+      project.configurations
+        .getByName("${variantName}Implementation")
+        .dependencies
+    dependencies.addAllLater(
+      project.provider {
+        InspectorDependencyPlanner.runtimeArtifacts(signals).map { artifact ->
+          createRuntimeDependency(project, artifact)
+        }
+      }
+    )
+  }
+
+  private fun createRuntimeDependency(project: Project, artifact: String): Dependency {
     val local = project.rootProject.findProject(":$artifact")
-    val alreadyPresent = dependencies.any { dependency ->
-      (local != null && dependency is ProjectDependency && dependency.path == local.path) ||
-        (dependency.group == ArtifactCoordinates.GROUP && dependency.name == artifact)
-    }
-    if (alreadyPresent) return
-    val notation: Any = local?.let {
+    return local?.let {
       project.dependencies.project(mapOf("path" to it.path))
-    } ?: "${ArtifactCoordinates.GROUP}:$artifact:${ArtifactCoordinates.VERSION}"
-    project.dependencies.add(configuration, notation)
+    } ?: project.dependencies.create(
+      "${ArtifactCoordinates.GROUP}:$artifact:${ArtifactCoordinates.VERSION}"
+    )
   }
 }
 

@@ -25,6 +25,7 @@ reviews:
     ignore_title_keywords:
       - "WIP"
       - "DO NOT MERGE"
+      - "Release"
 
 chat:
   auto_reply: true

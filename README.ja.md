@@ -23,13 +23,26 @@ SDKは対応するdebuggable variantだけへ追加され、release variantは�
 Android projectを開き、次のpromptをcoding agentへ渡します。
 
 ```text
-このAndroid projectへDataStore Inspector SDKの最新stable releaseを導入してください。
+公式ドキュメントに従い、このAndroid projectへDataStore Inspector SDKの最新stable releaseを導入してください。
 
-- GitHub Releasesでdraft／prereleaseではない最新versionを探し、同じversionがGradle Plugin PortalとMaven Centralで公開済みであることを確認してexact versionへ固定してください。確認できなければ推測せず私へ質問してください。
-- 既存のGradle構成に合わせ、com.masaibar.datastore-inspector PluginをAndroid application moduleだけへ適用してください。
-- Runtime artifactを手動追加せず、Gradle／AGP／Kotlin／Android SDKのversionや無関係なファイルを変更しないでください。
-- Proto schema mappingを既定では追加しないでください。対象のProto schemaが自動mappingの範囲外なら、generated classと完全修飾Proto message名を推測せず私へ確認してください。
-- 対象moduleの最小debug buildで検証し、変更ファイルと結果を報告してください。
+公式情報:
+- Repositoryと導入手順: https://github.com/masaibar/datastore-inspector-sdk
+- 最新stable GitHub Release API: https://api.github.com/repos/masaibar/datastore-inspector-sdk/releases/latest
+- Gradle Plugin Portal: https://plugins.gradle.org/plugin/com.masaibar.datastore-inspector
+- Maven Central runtime-core metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-core/maven-metadata.xml
+- Maven Central runtime-shared-preferences metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-shared-preferences/maven-metadata.xml
+- Maven Central runtime-preferences metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-preferences/maven-metadata.xml
+- Maven Central runtime-protobuf metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-protobuf/maven-metadata.xml
+- 対応範囲と対応構成: https://github.com/masaibar/datastore-inspector-sdk/blob/main/docs/compatibility.md
+
+要件:
+- ファイルを変更する前に導入手順と対応範囲を読んでください。
+- 最新stable GitHub Releaseの`tag_name`を取得し、先頭の`v`だけを除いたexact versionがGradle Plugin Portalと上記4つのMaven Central metadata URLのすべてで公開済みであることを確認して固定してください。情報が一致しない場合や確認できない場合は、推測したり別versionを選んだりせず私へ質問してください。
+- 既存のGradle構成を調べ、Version Catalogやconvention pluginを含む既存の規約を維持してください。`com.masaibar.datastore-inspector`は対象のAndroid application moduleだけへ適用し、dependency repositoryに`mavenCentral()`がなければ既存宣言と重複しない形で追加してください。application moduleが複数あり対象が不明なら、ファイルを変更する前に私へ質問してください。
+- Runtime artifactを手動追加せず、Gradle／AGP／Kotlin／Android SDKのversion、`org.gradle.configureondemand`、configuration cache設定、無関係なファイルを変更しないでください。
+- Proto schema mappingを既定では追加しないでください。Proto schemaがドキュメント記載の自動mapping範囲外なら、generated classと完全修飾Proto message名を推測せず私へ確認してください。
+- Android application moduleに対する最小のdebug buildで検証してください。失敗した場合は、既存のbuild設定やrelease分離を弱めずに原因を診断して報告してください。
+- 選択したexact version、変更ファイル、検証commandと結果、残っている手動作業を報告してください。
 ```
 
 ### 手動で設定する

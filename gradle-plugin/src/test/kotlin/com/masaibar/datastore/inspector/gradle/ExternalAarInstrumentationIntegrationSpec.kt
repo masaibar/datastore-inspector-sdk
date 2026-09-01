@@ -31,8 +31,8 @@ private const val FIXED_CORPUS_CLASS_PREFIX =
   "dev.example.external.PerformanceCorpus"
 
 class ExternalAarInstrumentationIntegrationSpec : DescribeSpec({
-  describe("application ALL scope integration") {
-    context("既知DataStore call-siteを含むexternal AARへ依存するとき") {
+  describe("application ALL-scope integration") {
+    context("when an external AAR contains a supported DataStore call site") {
       lateinit var fixture: ExternalAarFixture
       val performanceReport =
         System.getProperty(PERFORMANCE_REPORT_PROPERTY)
@@ -50,12 +50,13 @@ class ExternalAarInstrumentationIntegrationSpec : DescribeSpec({
         fixture.close()
       }
 
-      it("external classをbridge化して発見metadataをdebug APKへ格納する") {
+      it("instruments external classes and packages discovery metadata in the debug APK") {
         val result =
           fixture.runner
             .withArguments(
               "assembleDebug",
               "generateDataStoreInspectorInstrumentationReport",
+              "--configure-on-demand",
               "--stacktrace",
               "--console=plain",
               "--no-configuration-cache",
@@ -75,6 +76,8 @@ class ExternalAarInstrumentationIntegrationSpec : DescribeSpec({
           InstrumentationBudget.TARGET_ELAPSED_MILLIS
         fixture.instrumentationReport.readText() shouldContain
           "variant debug: ALL計装"
+        fixture.instrumentationReport.readText() shouldContain
+          "preferences adapter: true"
         val dexBytes = fixture.debugDexBytes()
         dexBytes.containsAscii(
           "com/masaibar/datastore/inspector/runtime/core/" +
@@ -191,6 +194,7 @@ private class ExternalAarFixture private constructor(
                     }
                 }
                 rootProject.name = "external-aar-consumer"
+                include(":library")
         """.trimIndent()
       )
       root.resolve("build.gradle.kts").writeText(
@@ -213,11 +217,34 @@ private class ExternalAarFixture private constructor(
                 }
 
                 dependencies {
+                    implementation(project(":library"))
                     implementation(files("libs/external-store.aar"))
-                    implementation("androidx.datastore:datastore:1.2.1")
                 }
         """.trimIndent()
       )
+      root.resolve("library/build.gradle.kts").apply {
+        parent.createDirectories()
+        writeText(
+          """
+                  plugins {
+                      id("com.android.library")
+                  }
+
+                  android {
+                      namespace = "dev.example.library"
+                      compileSdk = 37
+                  }
+
+                  dependencies {
+                      api("androidx.datastore:datastore-preferences:1.2.1")
+                  }
+          """.trimIndent()
+        )
+      }
+      root.resolve("library/src/main/AndroidManifest.xml").apply {
+        parent.createDirectories()
+        writeText("<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" />")
+      }
       root.resolve("src/main/AndroidManifest.xml").apply {
         parent.createDirectories()
         writeText("<manifest xmlns:android=\"http://schemas.android.com/apk/res/android\" />")
@@ -228,6 +255,7 @@ private class ExternalAarFixture private constructor(
                 import java.nio.file.Path
                 import java.nio.file.StandardOpenOption
                 import java.util.concurrent.ConcurrentHashMap
+                import org.gradle.api.artifacts.component.ModuleComponentIdentifier
                 import org.gradle.api.Task
                 import org.gradle.api.execution.TaskExecutionListener
                 import org.gradle.api.tasks.TaskState
@@ -239,6 +267,25 @@ private class ExternalAarFixture private constructor(
                         },
                     )
                 val instrumentationTaskStarts = ConcurrentHashMap<String, Long>()
+
+                gradle.projectsEvaluated {
+                    val resolutionResult = rootProject.configurations
+                        .getByName("debugRuntimeClasspath")
+                        .incoming
+                        .resolutionResult
+                    resolutionResult.rootComponent.get()
+                    check(
+                        resolutionResult.allComponents.any { component ->
+                            val module = component.id as? ModuleComponentIdentifier
+                            module != null &&
+                                module.group == "${ArtifactCoordinates.GROUP}" &&
+                                module.module == "runtime-preferences" &&
+                                module.version == "${ArtifactCoordinates.VERSION}"
+                        },
+                    ) {
+                        "runtime-preferences was not resolved on debugRuntimeClasspath."
+                    }
+                }
 
                 @Suppress("DEPRECATION")
                 gradle.addListener(
@@ -276,7 +323,11 @@ private class ExternalAarFixture private constructor(
             .inputStream()
             .use(::load)
         }
-      listOf("runtime-core", "runtime-shared-preferences").forEach { artifact ->
+      listOf(
+        "runtime-core",
+        "runtime-shared-preferences",
+        "runtime-preferences"
+      ).forEach { artifact ->
         writeStubArtifact(
           repository = root.resolve("maven"),
           group = coordinates.getProperty("group"),
