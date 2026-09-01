@@ -19,6 +19,8 @@ import org.gradle.api.tasks.TaskAction
 import java.security.MessageDigest
 import javax.inject.Inject
 
+private val SCHEMA_MAPPING_PART: Regex = Regex("^[A-Za-z_][A-Za-z0-9_.$]*$")
+
 @StableDataStoreInspectorGradleApi
 public abstract class DataStoreInspectorExtension @Inject constructor(objects: ObjectFactory) {
   internal val schemaMappings: ListProperty<String> =
@@ -28,10 +30,10 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
 
   @StableDataStoreInspectorGradleApi
   public fun schemaEntry(generatedJvmClassName: String, rootMessageFullName: String) {
-    require(MAPPING_PART.matches(generatedJvmClassName)) {
+    require(SCHEMA_MAPPING_PART.matches(generatedJvmClassName)) {
       "generated JVM class名が不正です: $generatedJvmClassName"
     }
-    require(MAPPING_PART.matches(rootMessageFullName)) {
+    require(SCHEMA_MAPPING_PART.matches(rootMessageFullName)) {
       "proto完全修飾message名が不正です: $rootMessageFullName"
     }
     schemaMappings.add("$generatedJvmClassName=$rootMessageFullName")
@@ -60,7 +62,6 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
   }
 
   private companion object {
-    val MAPPING_PART: Regex = Regex("^[A-Za-z_][A-Za-z0-9_.$]*$")
     val CLASS_NAME: Regex =
       Regex("^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)+$")
   }
@@ -185,6 +186,10 @@ public abstract class GenerateDataStoreInspectorSchemaTask : DefaultTask() {
   @get:PathSensitive(PathSensitivity.NONE)
   public abstract val descriptorFragments: ConfigurableFileCollection
 
+  @get:InputFiles
+  @get:PathSensitive(PathSensitivity.RELATIVE)
+  public abstract val protoSources: ConfigurableFileCollection
+
   @get:Input
   public abstract val schemaMappings: ListProperty<String>
 
@@ -194,75 +199,112 @@ public abstract class GenerateDataStoreInspectorSchemaTask : DefaultTask() {
   @TaskAction
   public fun generate() {
     val fragments = descriptorFragments.files.sortedBy { it.absolutePath }
-    val mappings = schemaMappings.get()
-    if (fragments.isEmpty() || mappings.isEmpty()) {
+    val explicitMappings = schemaMappings.get()
+    if (fragments.isEmpty()) {
       outputDirectory.get().asFile.deleteRecursively()
       logger.lifecycle(
-        "DataStore Inspector schema生成を省略: " +
-          "${mappings.size} entry、${fragments.size} descriptor fragment"
+        "DataStore Inspector schema generation skipped: no descriptor fragments"
       )
       return
     }
-    SchemaIndexProducer.produce(
+    val entryCount = SchemaIndexProducer.produce(
       fragments = fragments.map { it.readBytes() },
-      mappings = mappings,
+      sourceProtoPaths = protoSources.files.map { it.invariantSeparatorsPath },
+      explicitMappings = explicitMappings,
       outputDirectory = outputDirectory.get().asFile
     )
-    logger.lifecycle(
-      "DataStore Inspector schema生成成功: ${mappings.size} entry、" +
-        "${fragments.size} descriptor fragment"
-    )
+    if (entryCount == 0) {
+      logger.lifecycle(
+        "DataStore Inspector schema generation skipped: no supported Proto messages"
+      )
+    } else {
+      logger.lifecycle(
+        "DataStore Inspector schema generation succeeded: $entryCount entries, " +
+          "${fragments.size} descriptor fragments, " +
+          "${explicitMappings.size} explicit mappings"
+      )
+    }
   }
 }
 
 internal object SchemaIndexProducer {
   private const val MAX_DESCRIPTOR_BYTES = 8 * 1024 * 1024
 
-  fun produce(fragments: List<ByteArray>, mappings: List<String>, outputDirectory: java.io.File) {
-    require(fragments.isNotEmpty()) { "descriptor fragmentがありません。" }
-    require(mappings.isNotEmpty()) { "schema entryがありません。" }
+  fun produce(
+    fragments: List<ByteArray>,
+    sourceProtoPaths: List<String>,
+    explicitMappings: List<String>,
+    outputDirectory: java.io.File
+  ): Int {
+    require(fragments.isNotEmpty()) { "No descriptor fragments were provided." }
     val filesByName = linkedMapOf<String, ByteArray>()
     fragments.forEach { fragment ->
       FileDescriptorSet.parseFrom(fragment).fileList.forEach { descriptor ->
         val bytes = descriptor.toByteArray()
         val previous = filesByName.putIfAbsent(descriptor.name, bytes)
         require(previous == null || previous.contentEquals(bytes)) {
-          "同名protoが異なる内容で競合しました: ${descriptor.name}"
+          "Proto files with the same name have conflicting content: ${descriptor.name}"
         }
       }
     }
-    val merged =
+    val descriptorSet =
       FileDescriptorSet.newBuilder()
         .addAllFile(
           filesByName.toSortedMap().values.map(FileDescriptorProto::parseFrom)
         )
         .build()
-        .toByteArray()
-    require(merged.size <= MAX_DESCRIPTOR_BYTES) { "descriptor bundleが8 MiBを超えました。" }
-    val digest = sha256(merged)
-    val parsedMappings = mappings.map(::parseMapping)
-    require(parsedMappings.map { it.first }.distinct().size == parsedMappings.size) {
-      "同じgenerated JVM classに複数entryがあります。"
+    val merged = descriptorSet.toByteArray()
+    require(merged.size <= MAX_DESCRIPTOR_BYTES) {
+      "The descriptor bundle exceeds 8 MiB."
     }
-    val messageNames = collectMessageNames(FileDescriptorSet.parseFrom(merged))
-    parsedMappings.forEach { (_, messageName) ->
-      require(messageName in messageNames) {
-        "descriptor bundleにmessageがありません: $messageName"
+    val digest = sha256(merged)
+    val parsedExplicitMappings = explicitMappings.map(::parseMapping)
+    require(
+      parsedExplicitMappings
+        .map(SchemaMapping::generatedJvmClassName)
+        .distinct()
+        .size == parsedExplicitMappings.size
+    ) {
+      "Multiple explicit entries target the same generated JVM class."
+    }
+    val messageNames = collectMessageNames(descriptorSet)
+    parsedExplicitMappings.forEach { mapping ->
+      require(mapping.rootMessageFullName in messageNames) {
+        "The descriptor bundle does not contain message: " +
+          mapping.rootMessageFullName
       }
     }
+    val firstPartyDescriptorNames =
+      resolveFirstPartyDescriptorNames(
+        sourceProtoPaths = sourceProtoPaths,
+        descriptorNames = filesByName.keys
+      )
+    val firstPartyDescriptorSet =
+      FileDescriptorSet.newBuilder()
+        .addAllFile(
+          descriptorSet.fileList.filter { it.name in firstPartyDescriptorNames }
+        )
+        .build()
+    val mappings =
+      mergeMappings(
+        automaticMappings = ProtoJvmClassNameResolver.resolve(firstPartyDescriptorSet),
+        explicitMappings = parsedExplicitMappings
+      )
 
     outputDirectory.deleteRecursively()
+    if (mappings.isEmpty()) return 0
+
     val assetPath = "datastore-inspector/schemas/$digest.desc"
     outputDirectory.resolve(assetPath).apply {
       parentFile.mkdirs()
       writeBytes(merged)
     }
     val entries =
-      parsedMappings.sortedBy { it.first }.joinToString(",\n") { (className, messageName) ->
+      mappings.joinToString(",\n") { mapping ->
         """
                 {
-                  "generatedJvmClassName": "$className",
-                  "rootMessageFullName": "$messageName",
+                  "generatedJvmClassName": "${mapping.generatedJvmClassName}",
+                  "rootMessageFullName": "${mapping.rootMessageFullName}",
                   "codeGenerationMode": "JAVA_LITE",
                   "descriptorDigestSha256": "$digest",
                   "descriptorAssetPath": "$assetPath"
@@ -282,6 +324,32 @@ internal object SchemaIndexProducer {
         }
       )
     }
+    return mappings.size
+  }
+
+  private fun mergeMappings(
+    automaticMappings: List<SchemaMapping>,
+    explicitMappings: List<SchemaMapping>
+  ): List<SchemaMapping> {
+    val entriesByClass =
+      (automaticMappings + explicitMappings)
+        .groupBy(SchemaMapping::generatedJvmClassName)
+    val conflict =
+      entriesByClass.entries.firstOrNull { (_, entries) ->
+        entries.map(SchemaMapping::rootMessageFullName).distinct().size > 1
+      }
+    require(conflict == null) {
+      "Generated JVM class maps to multiple Proto messages: " +
+        "${conflict?.key} -> " +
+        conflict?.value
+          .orEmpty()
+          .map(SchemaMapping::rootMessageFullName)
+          .distinct()
+          .sorted()
+    }
+    return entriesByClass.values
+      .map { entries -> entries.first() }
+      .sortedBy(SchemaMapping::generatedJvmClassName)
   }
 
   private fun collectMessageNames(set: FileDescriptorSet): Set<String> =
@@ -298,10 +366,28 @@ internal object SchemaIndexProducer {
       }
     }
 
-  private fun parseMapping(mapping: String): Pair<String, String> {
+  private fun resolveFirstPartyDescriptorNames(
+    sourceProtoPaths: List<String>,
+    descriptorNames: Set<String>
+  ): Set<String> =
+    sourceProtoPaths.mapTo(linkedSetOf()) { sourcePath ->
+      descriptorNames
+        .filter { descriptorName ->
+          sourcePath == descriptorName || sourcePath.endsWith("/$descriptorName")
+        }
+        .maxByOrNull(String::length)
+        ?: error("No descriptor was generated for Proto source: $sourcePath")
+    }
+
+  private fun parseMapping(mapping: String): SchemaMapping {
     val parts = mapping.split('=', limit = 2)
-    require(parts.size == 2 && parts.all(String::isNotBlank)) { "schema mappingが不正です。" }
-    return parts[0] to parts[1]
+    require(parts.size == 2 && parts.all(SCHEMA_MAPPING_PART::matches)) {
+      "Schema mapping must contain valid generated JVM and Proto message names."
+    }
+    return SchemaMapping(
+      generatedJvmClassName = parts[0],
+      rootMessageFullName = parts[1]
+    )
   }
 
   private fun sha256(bytes: ByteArray): String =

@@ -54,8 +54,7 @@ android {
     release {
       isMinifyEnabled = true
       proguardFiles(
-        getDefaultProguardFile("proguard-android-optimize.txt"),
-        "proguard-rules.pro"
+        getDefaultProguardFile("proguard-android-optimize.txt")
       )
     }
   }
@@ -91,13 +90,6 @@ protobuf {
       }
     }
   }
-}
-
-dataStoreInspector {
-  schemaEntry(
-    "com.masaibar.datastore.inspector.sample.proto.UserSettings",
-    "datastore.inspector.sample.UserSettings"
-  )
 }
 
 tasks.withType<Test>().configureEach {

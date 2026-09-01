@@ -12,16 +12,18 @@ class SchemaIndexConsumerContractSpec : DescribeSpec() {
   private val fixtureRoot =
     File(
       checkNotNull(System.getProperty("datastore.inspector.schema.fixture")) {
-        "schema fixture pathが設定されていません。"
+        "The schema fixture path is not configured."
       }
     )
 
   init {
     describe("SchemaIndexConsumerContract") {
-      context("既存の契約を検証するとき") {
-        it("Gradle Pluginが生成したgolden schemaをRuntime consumerで検証する") {
+      context("when verifying the generated schema contract") {
+        it("loads every automatic mapping generated for the sample schema") {
           val indexFile = fixtureRoot.resolve("datastore-inspector/schema-index.json")
-          withClue("schema indexがありません: $indexFile") { (indexFile.isFile) shouldBe true }
+          withClue("The schema index does not exist: $indexFile") {
+            (indexFile.isFile) shouldBe true
+          }
           val verified =
             SchemaIndexConsumer.load(indexFile.readBytes()) { path ->
               fixtureRoot.resolve(path).takeIf(File::isFile)?.readBytes()
@@ -33,7 +35,11 @@ class SchemaIndexConsumerContractSpec : DescribeSpec() {
           ) shouldBe (
             mapOf(
               "com.masaibar.datastore.inspector.sample.proto.UserSettings" to
-                "datastore.inspector.sample.UserSettings"
+                "datastore.inspector.sample.UserSettings",
+              "com.masaibar.datastore.inspector.sample.proto.UserSettings\$NotificationSettings" to
+                "datastore.inspector.sample.UserSettings.NotificationSettings",
+              "com.masaibar.datastore.inspector.sample.proto.common.Profile" to
+                "datastore.inspector.sample.common.Profile"
             )
           )
           verified.entries.forEach { entry ->
@@ -45,7 +51,7 @@ class SchemaIndexConsumerContractSpec : DescribeSpec() {
           }
         }
 
-        it("欠落assetとpath traversalとdigest不一致を拒否する") {
+        it("rejects a missing asset, path traversal, and a digest mismatch") {
           val validIndex =
             fixtureRoot.resolve("datastore-inspector/schema-index.json").readText()
           shouldThrow<IllegalArgumentException> {
@@ -69,10 +75,10 @@ class SchemaIndexConsumerContractSpec : DescribeSpec() {
           }
         }
 
-        it("重複classと8MiB超過とimport欠落を拒否する") {
+        it("rejects duplicate classes, oversized descriptors, and missing imports") {
           val validIndex = fixtureRoot.resolve("datastore-inspector/schema-index.json").readText()
           val entry = Regex("\\{\\s*\"generatedJvmClassName\".*?\\n\\s*}", RegexOption.DOT_MATCHES_ALL)
-            .find(validIndex)?.value ?: error("fixture entryを抽出できません。")
+            .find(validIndex)?.value ?: error("Cannot extract a schema fixture entry.")
           val duplicate = validIndex.replace(entry, "$entry,\n$entry")
           shouldThrow<IllegalArgumentException> {
             SchemaIndexConsumer.load(duplicate.encodeToByteArray()) { path ->
@@ -85,7 +91,7 @@ class SchemaIndexConsumerContractSpec : DescribeSpec() {
 
           val descriptorPath =
             Regex("datastore-inspector/schemas/[0-9a-f]{64}\\.desc").find(validIndex)?.value
-              ?: error("descriptor pathがありません。")
+              ?: error("The descriptor path is missing.")
           val descriptor = fixtureRoot.resolve(descriptorPath).readBytes()
           val set = FileDescriptorSet.parseFrom(descriptor)
           val withoutImport =
