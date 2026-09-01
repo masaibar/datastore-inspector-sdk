@@ -114,10 +114,7 @@ shasum -a 256 -c \
 - At the start of a release cycle, create `release/<version>` from the latest public `main`.
 - Target every feature or fix pull request for that version at `release/<version>`, and merge it only
   after CI and review succeed. Individual pull requests may use squash merge.
-- Keep exactly one pull request from `release/<version>` to public `main`, titled `Release <version>`,
-  and update its included-change list as individual pull requests merge. CodeRabbit does not review
-  the same changes again in this final pull request because they were reviewed before entering the
-  release branch.
+- Keep exactly one pull request from `release/<version>` to public `main`, titled `[release-pr] Release <version>`, and update its included-change list as individual pull requests merge. This marker prevents CodeRabbit from reviewing the same changes again after they were reviewed before entering the release branch.
 - Merge the final release pull request with GitHub's `Create a merge commit`. Do not use `Squash and
   merge` or `Rebase and merge`: they do not preserve the release branch pull-request commits as
   ancestors of `main`, so generated release notes can omit the actual change pull requests.

@@ -109,9 +109,7 @@ shasum -a 256 -c \
 - release cycleの開始時に、最新のpublic `main`から`release/<version>` branchを作成する。
 - そのversionへ含めるfeature／fix PRは`release/<version>`をbaseにし、CIとreviewを完了してからmergeする。
   個別PRはsquash mergeしてよい。
-- `release/<version>`からpublic `main`へのPRは`Release <version>`というtitleで1件だけ作成し、個別PRのmergeに
-  合わせて「含まれる変更」を更新する。この最終PRでは、release branchへ入る前にreview済みの同じ差分を
-  CodeRabbitで再reviewしない。
+- `release/<version>`からpublic `main`へのPRは`[release-pr] Release <version>`というtitleで1件だけ作成し、個別PRのmergeに合わせて「含まれる変更」を更新する。このmarkerにより、release branchへ入る前にreview済みの同じ差分をCodeRabbitで再reviewしない。
 - 最終release PRはGitHubの`Create a merge commit`でmergeする。`Squash and merge`または`Rebase and merge`を
   使用するとrelease branch内のPR commitをmainの祖先として保持できず、自動生成Release Notesから実際の
   変更PRが欠落し得るため使用しない。
