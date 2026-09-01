@@ -19,8 +19,10 @@ import org.gradle.api.tasks.TaskAction
 import java.security.MessageDigest
 import javax.inject.Inject
 
-private val SCHEMA_MAPPING_PART: Regex =
+private val GENERATED_JVM_CLASS_NAME: Regex =
   Regex("^[A-Za-z_][A-Za-z0-9_$]*(\\.[A-Za-z_][A-Za-z0-9_$]*)*$")
+private val PROTO_MESSAGE_FULL_NAME: Regex =
+  Regex("^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$")
 
 @StableDataStoreInspectorGradleApi
 public abstract class DataStoreInspectorExtension @Inject constructor(objects: ObjectFactory) {
@@ -31,11 +33,11 @@ public abstract class DataStoreInspectorExtension @Inject constructor(objects: O
 
   @StableDataStoreInspectorGradleApi
   public fun schemaEntry(generatedJvmClassName: String, rootMessageFullName: String) {
-    require(SCHEMA_MAPPING_PART.matches(generatedJvmClassName)) {
-      "generated JVM class名が不正です: $generatedJvmClassName"
+    require(GENERATED_JVM_CLASS_NAME.matches(generatedJvmClassName)) {
+      "Invalid generated JVM class name: $generatedJvmClassName"
     }
-    require(SCHEMA_MAPPING_PART.matches(rootMessageFullName)) {
-      "proto完全修飾message名が不正です: $rootMessageFullName"
+    require(PROTO_MESSAGE_FULL_NAME.matches(rootMessageFullName)) {
+      "Invalid fully qualified Proto message name: $rootMessageFullName"
     }
     schemaMappings.add("$generatedJvmClassName=$rootMessageFullName")
   }
@@ -382,7 +384,11 @@ internal object SchemaIndexProducer {
 
   private fun parseMapping(mapping: String): SchemaMapping {
     val parts = mapping.split('=', limit = 2)
-    require(parts.size == 2 && parts.all(SCHEMA_MAPPING_PART::matches)) {
+    require(
+      parts.size == 2 &&
+        GENERATED_JVM_CLASS_NAME.matches(parts[0]) &&
+        PROTO_MESSAGE_FULL_NAME.matches(parts[1])
+    ) {
       "Schema mapping must contain valid generated JVM and Proto message names."
     }
     return SchemaMapping(
