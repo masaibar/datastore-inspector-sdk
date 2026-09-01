@@ -9,6 +9,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.tasks.CacheableTask
@@ -239,7 +240,7 @@ internal object AndroidVariantIntegration {
           task.descriptorFragments.from(descriptor)
           task.protoSources.from(
             protobufProject.tasks.named(exactTaskName).map { generateProtoTask ->
-              ProtoTaskSchemaSources.javaLiteSourceDirsOrEmpty(generateProtoTask)
+              ProtoTaskSchemaSources.javaLiteProtoSourceFilesOrEmpty(generateProtoTask)
             }
           )
         }
@@ -381,12 +382,16 @@ internal object AndroidVariantIntegration {
 }
 
 internal object ProtoTaskSchemaSources {
-  fun javaLiteSourceDirsOrEmpty(task: Task): Any {
-    if (!hasJavaLiteBuiltin(task.inputs.properties)) return emptyList<File>()
-    return task.javaClass.methods
-      .firstOrNull { it.name == "getSourceDirs" && it.parameterCount == 0 }
-      ?.invoke(task)
-      ?: emptyList<File>()
+  fun javaLiteProtoSourceFilesOrEmpty(task: Task): FileCollection {
+    if (!hasJavaLiteBuiltin(task.inputs.properties)) return task.project.files()
+    val sourceDirs =
+      task.javaClass.methods
+        .firstOrNull { it.name == "getSourceDirs" && it.parameterCount == 0 }
+        ?.invoke(task) as? FileCollection
+        ?: return task.project.files()
+    return sourceDirs.asFileTree.matching { patterns ->
+      patterns.include("**/*.proto")
+    }
   }
 
   fun hasJavaLiteBuiltin(inputProperties: Map<String, Any?>): Boolean =
