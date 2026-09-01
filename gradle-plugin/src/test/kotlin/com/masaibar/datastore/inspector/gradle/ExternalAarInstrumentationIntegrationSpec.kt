@@ -255,6 +255,7 @@ private class ExternalAarFixture private constructor(
                 import java.nio.file.Path
                 import java.nio.file.StandardOpenOption
                 import java.util.concurrent.ConcurrentHashMap
+                import org.gradle.api.artifacts.component.ModuleComponentIdentifier
                 import org.gradle.api.Task
                 import org.gradle.api.execution.TaskExecutionListener
                 import org.gradle.api.tasks.TaskState
@@ -268,12 +269,22 @@ private class ExternalAarFixture private constructor(
                 val instrumentationTaskStarts = ConcurrentHashMap<String, Long>()
 
                 gradle.projectsEvaluated {
-                    rootProject.configurations
+                    val resolutionResult = rootProject.configurations
                         .getByName("debugRuntimeClasspath")
                         .incoming
                         .resolutionResult
-                        .rootComponent
-                        .get()
+                    resolutionResult.rootComponent.get()
+                    check(
+                        resolutionResult.allComponents.any { component ->
+                            val module = component.id as? ModuleComponentIdentifier
+                            module != null &&
+                                module.group == "${ArtifactCoordinates.GROUP}" &&
+                                module.module == "runtime-preferences" &&
+                                module.version == "${ArtifactCoordinates.VERSION}"
+                        },
+                    ) {
+                        "runtime-preferences was not resolved on debugRuntimeClasspath."
+                    }
                 }
 
                 @Suppress("DEPRECATION")

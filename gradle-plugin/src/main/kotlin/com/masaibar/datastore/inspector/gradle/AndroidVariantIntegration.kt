@@ -8,7 +8,7 @@ import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.api.DefaultTask
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.artifacts.DependencySet
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.file.FileCollection
 import org.gradle.api.file.RegularFileProperty
@@ -294,6 +294,9 @@ internal object AndroidVariantIntegration {
               debuggableProjectVariants,
               report
             )
+            if (dependency.path != candidate.path && dependency.path != rootApplication.path) {
+              rootApplication.evaluationDependsOn(dependency.path)
+            }
           }
         }
         observeExternalDependency(dependency.group, dependency.name, signals)
@@ -365,29 +368,26 @@ internal object AndroidVariantIntegration {
     variantName: String,
     signals: DependencySignals
   ) {
-    project.configurations
-      .getByName("${variantName}Implementation")
-      .withDependencies { dependencies ->
-        scanDependencySignals(project, mutableSetOf(), signals)
-        InspectorDependencyPlanner.runtimeArtifacts(signals).forEach { artifact ->
-          addOnce(project, dependencies, artifact)
+    val dependencies =
+      project.configurations
+        .getByName("${variantName}Implementation")
+        .dependencies
+    dependencies.addAllLater(
+      project.provider {
+        InspectorDependencyPlanner.runtimeArtifacts(signals).map { artifact ->
+          createRuntimeDependency(project, artifact)
         }
       }
+    )
   }
 
-  private fun addOnce(project: Project, dependencies: DependencySet, artifact: String) {
+  private fun createRuntimeDependency(project: Project, artifact: String): Dependency {
     val local = project.rootProject.findProject(":$artifact")
-    val alreadyPresent = dependencies.any { dependency ->
-      (local != null && dependency is ProjectDependency && dependency.path == local.path) ||
-        (dependency.group == ArtifactCoordinates.GROUP && dependency.name == artifact)
-    }
-    if (alreadyPresent) return
-    val dependency = local?.let {
+    return local?.let {
       project.dependencies.project(mapOf("path" to it.path))
     } ?: project.dependencies.create(
       "${ArtifactCoordinates.GROUP}:$artifact:${ArtifactCoordinates.VERSION}"
     )
-    dependencies.add(dependency)
   }
 }
 

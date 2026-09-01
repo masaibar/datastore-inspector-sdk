@@ -30,11 +30,14 @@ Official sources:
 - Latest stable GitHub Release API: https://api.github.com/repos/masaibar/datastore-inspector-sdk/releases/latest
 - Gradle Plugin Portal: https://plugins.gradle.org/plugin/com.masaibar.datastore-inspector
 - Maven Central runtime-core metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-core/maven-metadata.xml
+- Maven Central runtime-shared-preferences metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-shared-preferences/maven-metadata.xml
+- Maven Central runtime-preferences metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-preferences/maven-metadata.xml
+- Maven Central runtime-protobuf metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-protobuf/maven-metadata.xml
 - Compatibility and supported configurations: https://github.com/masaibar/datastore-inspector-sdk/blob/main/docs/en/compatibility.md
 
 Requirements:
 - Read the installation guide and compatibility document before changing files.
-- Read `tag_name` from the latest stable GitHub Release, remove only its leading `v`, verify that the exact version is available from both the Gradle Plugin Portal and Maven Central, and pin it. If any source disagrees or cannot be verified, ask me instead of guessing or selecting another version.
+- Read `tag_name` from the latest stable GitHub Release, remove only its leading `v`, verify that the exact version is available from the Gradle Plugin Portal and all four Maven Central metadata URLs above, and pin it. If any source disagrees or cannot be verified, ask me instead of guessing or selecting another version.
 - Inspect the existing Gradle structure and preserve its conventions, including Version Catalogs and convention plugins. Apply `com.masaibar.datastore-inspector` only to the target Android application module and ensure its dependency repositories include `mavenCentral()` without duplicating repository declarations. If more than one application module exists and the target is unclear, ask me before changing files.
 - Do not add Runtime artifacts manually or change Gradle, AGP, Kotlin, Android SDK, `org.gradle.configureondemand`, configuration-cache settings, or unrelated files.
 - Do not add a Proto schema mapping by default. If the Proto schema is outside the documented automatic mapping scope, ask me for the generated class and fully qualified Proto message name instead of guessing.
