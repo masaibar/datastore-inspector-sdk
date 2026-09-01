@@ -47,8 +47,9 @@ jobs:
             --base "$DEFAULT_BRANCH" \
             --head "$RELEASE_BRANCH" \
             --state open \
-            --limit 2 \
-            --json number \
+            --limit 1000 \
+            --json number,isCrossRepository \
+            --jq '[.[] | select(.isCrossRepository == false)]' \
             > "$release_prs"
 
           release_pr_count="$(jq 'length' "$release_prs")"
@@ -66,26 +67,28 @@ jobs:
             --base "$RELEASE_BRANCH" \
             --state merged \
             --limit 1000 \
-            --json number,headRefName \
+            --json number,headRefName,mergedAt \
             --jq 'sort_by(.number)' \
             > "$merged_prs"
 
           : > "$changes"
-          while IFS=$'\t' read -r pr_number head_branch; do
+          while IFS=$'\t' read -r pr_number head_branch parent_merged_at; do
             [[ -n "$pr_number" ]] || continue
             printf -- '- #%s\n' "$pr_number" >> "$changes"
-            while IFS= read -r child_pr_number; do
-              [[ -n "$child_pr_number" ]] || continue
-              printf -- '  - #%s\n' "$child_pr_number" >> "$changes"
-            done < <(
+            child_pr_numbers="$(
               gh pr list \
                 --base "$head_branch" \
                 --state merged \
                 --limit 1000 \
-                --json number \
-                --jq 'sort_by(.number) | .[].number'
-            )
-          done < <(jq -r '.[] | [.number, .headRefName] | @tsv' "$merged_prs")
+                --json number,mergedAt |
+                jq -r --arg parent_merged_at "$parent_merged_at" \
+                  'map(select(.mergedAt <= $parent_merged_at)) | sort_by(.number) | .[].number'
+            )"
+            while IFS= read -r child_pr_number; do
+              [[ -n "$child_pr_number" ]] || continue
+              printf -- '  - #%s\n' "$child_pr_number" >> "$changes"
+            done <<< "$child_pr_numbers"
+          done < <(jq -r '.[] | [.number, .headRefName, .mergedAt] | @tsv' "$merged_prs")
 
           if [[ ! -s "$changes" ]]; then
             echo "No merged PRs into $RELEASE_BRANCH were found."
