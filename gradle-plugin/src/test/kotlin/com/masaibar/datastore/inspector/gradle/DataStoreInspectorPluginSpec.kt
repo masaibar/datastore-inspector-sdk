@@ -64,6 +64,20 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
           (result.output.contains("DataStore Inspector Gradle Plugin scaffold is active.")) shouldBe true
         }
 
+        context("when a Proto message name contains a dollar sign") {
+          val project = ProjectBuilder.builder().build()
+          val extension = project.objects.newInstance(DataStoreInspectorExtension::class.java)
+
+          it("rejects it after accepting the nested generated JVM class name") {
+            shouldThrow<IllegalArgumentException> {
+              extension.schemaEntry(
+                "dev.example.UserSettings\$Nested",
+                "sample.User\$Settings"
+              )
+            }.message.orEmpty() shouldContain "Invalid fully qualified Proto message name"
+          }
+        }
+
         it("generates automatic mappings and a deterministic schema index") {
           val common =
             FileDescriptorProto.newBuilder()
@@ -189,7 +203,8 @@ class DataStoreInspectorPluginSpec : DescribeSpec() {
           listOf(
             "dev.example.\"Invalid=sample.UserSettings",
             "dev.example.=sample.UserSettings",
-            "dev..example.UserSettings=sample.UserSettings"
+            "dev..example.UserSettings=sample.UserSettings",
+            "dev.example.UserSettings=sample.User\$Settings"
           ).forEach { invalidMapping ->
             shouldThrow<IllegalArgumentException> {
               SchemaIndexProducer.produce(
