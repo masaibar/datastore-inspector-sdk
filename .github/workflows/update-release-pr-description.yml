@@ -95,7 +95,8 @@ jobs:
             exit 0
           fi
 
-          gh pr view "$release_pr_number" --json body --jq '.body // ""' > "$current_body"
+          gh pr view "$release_pr_number" --json body --jq '.body // ""' |
+            tr -d '\r' > "$current_body"
           printf '## 含まれる変更\n\n' > "$new_section"
           cat "$changes" >> "$new_section"
 
