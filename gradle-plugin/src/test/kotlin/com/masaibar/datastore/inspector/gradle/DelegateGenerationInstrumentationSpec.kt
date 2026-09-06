@@ -51,7 +51,7 @@ class DelegateGenerationInstrumentationSpec : DescribeSpec() {
           (error.message.orEmpty().contains("未知のsignature")) shouldBe true
         }
 
-        it("KMP Factory経路と無関係な呼び出しは変更しない") {
+        it("rejects unknown KMP path factory signatures") {
           val factory = MethodCall(
             Opcodes.INVOKESTATIC,
             "androidx/datastore/preferences/core/PreferenceDataStoreFactory",
@@ -60,7 +60,7 @@ class DelegateGenerationInstrumentationSpec : DescribeSpec() {
           )
           val original = classWithCalls(listOf(factory))
 
-          (calls(rewrite(original))) shouldBe (listOf(factory))
+          shouldThrow<IllegalStateException> { rewrite(original) }
         }
       }
     }

@@ -17,6 +17,7 @@ English | [日本語](../compatibility.md)
 - protobuf-javalite 4.35.0 and protobuf Gradle Plugin 0.10.0
 - `preferencesDataStore` and typed `dataStore` delegates in the application and reachable
   first-party Android libraries
+- Starting with SDK 1.2.0: automatic instrumentation of `PreferenceDataStoreFactory.createWithPath` and `create` (with `produceFile` or `storage`). KMP support covers the Android target.
 - Custom DataStore created through typed `dataStore` or `deviceProtectedDataStore`,
   `DataStoreFactory`, `MultiProcessDataStoreFactory`, `FileStorage`, or `OkioStorage`
 - Supported creation call sites in dependency artifacts reachable through the application's
@@ -59,8 +60,6 @@ dataStoreInspector {
 - Connections to secondary processes
 - Device-protected storage, EncryptedSharedPreferences decryption, and automatic detection of
   custom encryption wrappers
-- Automatic instrumentation of KMP Android `PreferenceDataStoreFactory.createWithPath` and
-  direct Factory creation
 - Non-Android KMP targets such as iOS
 - Custom DataStore instances that do not pass through a supported creation call site, and paths
   from which the actual instance or Serializer cannot be obtained

@@ -144,7 +144,7 @@ internal object AndroidVariantIntegration {
         task.lines.add("reachable first-party projects: ${observedProjects.sorted()}")
         task.lines.add("preferences adapter: ${signals.preferences}")
         task.lines.add("protobuf adapter: ${signals.protobuf}")
-        task.lines.add("KMP createWithPath matcher: 無効（fallback手動登録）")
+        task.lines.add("Preferences create/createWithPath matchers: enabled (DataStore 1.2.1)")
         task.lines.add(
           "instrumentation budget: target classes <= " +
             "${InstrumentationBudget.TARGET_CLASS_COUNT}, elapsed <= " +

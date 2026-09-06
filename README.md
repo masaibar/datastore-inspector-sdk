@@ -23,27 +23,13 @@ The SDK is added only to supported debuggable variants and leaves release varian
 Open the Android project and give your coding agent this prompt:
 
 ```text
-Add the latest stable DataStore Inspector SDK release to this Android project by following the official documentation.
+Add DataStore Inspector SDK to this Android project using the installation guide and compatibility notes:
+https://github.com/masaibar/datastore-inspector-sdk
 
-Official sources:
-- Repository and installation guide: https://github.com/masaibar/datastore-inspector-sdk
-- Latest stable GitHub Release API: https://api.github.com/repos/masaibar/datastore-inspector-sdk/releases/latest
-- Gradle Plugin Portal: https://plugins.gradle.org/plugin/com.masaibar.datastore-inspector
-- Maven Central protocol metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/protocol/maven-metadata.xml
-- Maven Central runtime-core metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-core/maven-metadata.xml
-- Maven Central runtime-shared-preferences metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-shared-preferences/maven-metadata.xml
-- Maven Central runtime-preferences metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-preferences/maven-metadata.xml
-- Maven Central runtime-protobuf metadata: https://repo1.maven.org/maven2/com/masaibar/datastore%2Dinspector/runtime-protobuf/maven-metadata.xml
-- Compatibility and supported configurations: https://github.com/masaibar/datastore-inspector-sdk/blob/main/docs/en/compatibility.md
-
-Requirements:
-- Read the installation guide and compatibility document before changing files.
-- Read `tag_name` from the latest stable GitHub Release, remove only its leading `v`, verify that the exact version is available from the Gradle Plugin Portal and all five Maven Central metadata URLs above, and pin it. If any source disagrees or cannot be verified, ask me instead of guessing or selecting another version.
-- Inspect the existing Gradle structure and preserve its conventions, including Version Catalogs and convention plugins. Apply `com.masaibar.datastore-inspector` only to the target Android application module and ensure its dependency repositories include `mavenCentral()` without duplicating repository declarations. If more than one application module exists and the target is unclear, ask me before changing files.
-- Do not add Runtime artifacts manually or change Gradle, AGP, Kotlin, Android SDK, `org.gradle.configureondemand`, configuration-cache settings, or unrelated files.
-- Do not add a Proto schema mapping by default. If the Proto schema is outside the documented automatic mapping scope, ask me for the generated class and fully qualified Proto message name instead of guessing.
-- Run the smallest relevant debug build for the application module. If it fails, diagnose and report the cause without weakening existing build settings or release isolation.
-- Report the selected exact version, changed files, verification command and result, and any remaining manual step.
+- Verify that the latest stable release is published on both Gradle Plugin Portal and Maven Central, and pin that version.
+- Preserve the existing Gradle conventions and build settings. Apply the Plugin to the target Android application module; do not add Runtime dependencies manually.
+- Add Proto mappings only when required by the documented support scope. Ask before proceeding if the target, version, or mapping is unclear.
+- Run a debug build and report the changes, results, and any stores that still need manual setup.
 ```
 
 ### Configure manually
