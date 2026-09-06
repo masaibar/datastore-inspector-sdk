@@ -342,6 +342,7 @@ internal object InvocationRoutes {
         includeDeviceProtected = false
       )
       addStructuredSerializationRoutes()
+      addPreferencesFactoryRoutes()
     }
 
   private val strictOwnerNames: Set<Pair<String, String>> =
@@ -351,6 +352,69 @@ internal object InvocationRoutes {
 
   fun requiresKnownDescriptor(owner: String, name: String): Boolean =
     owner to name in strictOwnerNames
+
+  private fun MutableList<InvocationRoute>.addPreferencesFactoryRoutes() {
+    addPreferencesFactoryRoutes("preferences-path", "createWithPath", "createWithPath", false)
+    addPreferencesFactoryRoutes("preferences-file", "create", "createFromFile", false)
+    addPreferencesFactoryRoutes("preferences-storage", "create", "createFromStorage", true)
+  }
+
+  private fun MutableList<InvocationRoute>.addPreferencesFactoryRoutes(
+    id: String,
+    originalName: String,
+    bridgeName: String,
+    fromStorage: Boolean
+  ) {
+    val owner = "androidx/datastore/preferences/core/PreferenceDataStoreFactory"
+    val bridgeOwner =
+      "com/masaibar/datastore/inspector/runtime/preferences/PreferencesDataStoreFactoryBridge"
+    val arguments = if (fromStorage) {
+      listOf(
+        "$STORAGE_DESCRIPTOR$CORRUPTION_DESCRIPTOR$MIGRATION_LIST_DESCRIPTOR$SCOPE_DESCRIPTOR",
+        "$STORAGE_DESCRIPTOR$CORRUPTION_DESCRIPTOR$MIGRATION_LIST_DESCRIPTOR",
+        "$STORAGE_DESCRIPTOR$CORRUPTION_DESCRIPTOR",
+        STORAGE_DESCRIPTOR
+      )
+    } else {
+      listOf(
+        "$CORRUPTION_DESCRIPTOR$MIGRATION_LIST_DESCRIPTOR$SCOPE_DESCRIPTOR$FUNCTION0_DESCRIPTOR",
+        "$CORRUPTION_DESCRIPTOR$MIGRATION_LIST_DESCRIPTOR$FUNCTION0_DESCRIPTOR",
+        "$CORRUPTION_DESCRIPTOR$FUNCTION0_DESCRIPTOR",
+        FUNCTION0_DESCRIPTOR
+      )
+    }
+    arguments.forEachIndexed { index, parameters ->
+      add(
+        InvocationRoute(
+          id = "$id-${index + 1}-v1",
+          opcode = Opcodes.INVOKEVIRTUAL,
+          owner = owner,
+          originalName = originalName,
+          originalDescriptor = "($parameters)$DATA_STORE_DESCRIPTOR",
+          bridgeOwner = bridgeOwner,
+          bridgeName = bridgeName,
+          bridgeDescriptor = "(L$owner;$parameters$METADATA_DESCRIPTOR)$DATA_STORE_DESCRIPTOR",
+          addDeclarationMetadata = true,
+          unknownDescriptorIsError = true
+        )
+      )
+    }
+    val defaultArguments = "L$owner;${arguments.first()}$DEFAULT_SUFFIX_DESCRIPTOR"
+    add(
+      InvocationRoute(
+        id = "$id-default-v1",
+        opcode = Opcodes.INVOKESTATIC,
+        owner = owner,
+        originalName = "$originalName\$default",
+        originalDescriptor = "($defaultArguments)$DATA_STORE_DESCRIPTOR",
+        bridgeOwner = bridgeOwner,
+        bridgeName = "${bridgeName}Default",
+        bridgeDescriptor = "($defaultArguments$METADATA_DESCRIPTOR)$DATA_STORE_DESCRIPTOR",
+        addDeclarationMetadata = true,
+        unknownDescriptorIsError = true
+      )
+    )
+  }
 
   private fun MutableList<InvocationRoute>.addFactoryRoutes(
     factoryOwner: String,

@@ -30,6 +30,9 @@ import java.io.File
  */
 @InternalDataStoreInspectorApi
 public object DataStoreCreationBridge {
+  public fun observedNameForStorage(storage: Storage<*>): ObservedStoreName? =
+    CustomInspectionRegistry.captureForStorage<Any?>(storage)?.observedName
+
   @JvmStatic
   @Suppress("UNUSED_PARAMETER")
   public fun <T> createSingleProcess(

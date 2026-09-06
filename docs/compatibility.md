@@ -15,6 +15,7 @@
 - Kotlin 2.3.21
 - protobuf-javalite 4.35.0、protobuf Gradle Plugin 0.10.0
 - applicationと到達可能なfirst-party Android libraryの`preferencesDataStore`／typed `dataStore` delegate
+- SDK 1.2.0以降: `PreferenceDataStoreFactory.createWithPath`と`create`（`produceFile`／`storage`指定）の自動計装。KMPはAndroid targetが対象。
 - typed `dataStore`／`deviceProtectedDataStore`、`DataStoreFactory`、
   `MultiProcessDataStoreFactory`、`FileStorage`、`OkioStorage`を通るCustom DataStore
 - applicationの`InstrumentationScope.ALL`で到達する依存artifact内の対応済み作成call site
@@ -55,7 +56,6 @@ dataStoreInspector {
 - API 27以下の端末
 - secondary processへの接続
 - device-protected storage、EncryptedSharedPreferencesの復号、custom暗号化wrapperの自動判定
-- KMP Androidの`PreferenceDataStoreFactory.createWithPath`とFactory直接生成の自動計装
 - iOSなどAndroid以外のKMP target
 - 対応済み作成call siteを通らないCustom DataStore、実instance／Serializerを取得できない経路
 - Custom serializerのraw binaryを推測または直接編集すること
