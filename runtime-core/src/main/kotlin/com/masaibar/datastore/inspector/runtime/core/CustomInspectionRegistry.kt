@@ -92,11 +92,12 @@ internal object CustomInspectionRegistry {
   }
 }
 
-internal class ObservedStoreName {
+@InternalDataStoreInspectorApi
+public class ObservedStoreName {
   private val value = AtomicReference<String?>(null)
   private val declarationId = AtomicReference<String?>(null)
 
-  fun observe(baseName: String) {
+  public fun observe(baseName: String) {
     val safeName =
       baseName.takeIf { candidate ->
         candidate.isNotBlank() &&
@@ -109,9 +110,9 @@ internal class ObservedStoreName {
     }
   }
 
-  fun current(): String? = value.get()
+  public fun current(): String? = value.get()
 
-  fun bind(id: String) {
+  public fun bind(id: String) {
     declarationId.set(id)
     value.get()?.let { safeName ->
       DataStoreInspectorRuntime.updateObservedFileName(id, safeName)
