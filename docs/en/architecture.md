@@ -46,7 +46,7 @@ repository.
 - Below API 28, the Provider is a no-op and creates no session metadata, socket, or thread. The
   Runtime AAR manifest still declares `minSdk` 23.
 - A random private session token authenticates each connection.
-- Each Runtime accepts one client at a time. After authentication and Protocol compatibility checks, later clients receive a retryable `BUSY` handshake response and are closed. The existing connection stays active; there is no forced takeover. Each handshake has a five-second total read deadline, and Runtime shutdown also closes a pending admission socket.
+- Each Runtime accepts one client at a time. Up to four pending handshakes are processed concurrently without a queue; excess connections are closed immediately without a `BUSY` response. Clients admitted to these workers receive a retryable `BUSY` handshake response after authentication and Protocol compatibility checks, then are closed. The existing connection stays active; there is no forced takeover. Each handshake has a five-second total read deadline, and Runtime shutdown also closes all pending admission sockets.
 - ADB forwards a host loopback port to an abstract local socket.
 - Preferences mutations use `DataStore.edit`.
 - Runtime catalogs only persisted credential-protected SharedPreferences files and treats the
