@@ -281,7 +281,7 @@ internal class AuthenticatedLocalServer(
 ) : Closeable {
   private val running = AtomicBoolean(false)
   private val activeClient = AtomicReference<LocalSocket?>(null)
-  private val pendingClient = AtomicReference<LocalSocket?>(null)
+  private val pendingHandshakes = PendingHandshakeWorkers()
   private val clientLock = Any()
   private val subscriptionGeneration = AtomicLong(0)
   private lateinit var socket: LocalServerSocket
@@ -308,16 +308,10 @@ internal class AuthenticatedLocalServer(
           ordinaryFailureOrNull { client.close() }
           return
         }
-        (!activeClient.compareAndSet(null, client)).also { occupied ->
-          if (occupied) pendingClient.set(client)
-        }
+        !activeClient.compareAndSet(null, client)
       }
       if (occupied) {
-        try {
-          ordinaryFailureOrNull { client.use { serve(it, occupied = true) } }
-        } finally {
-          pendingClient.compareAndSet(client, null)
-        }
+        pendingHandshakes.submit(client) { serve(client, occupied = true) }
         continue
       }
       Thread({
@@ -464,10 +458,7 @@ internal class AuthenticatedLocalServer(
         activeClient.getAndSet(null)?.close()
         Unit
       }
-      ordinaryFailureOrNull {
-        pendingClient.getAndSet(null)?.close()
-        Unit
-      }
+      pendingHandshakes.close()
     }
     ordinaryFailureOrNull { socket.close() }
     if (::thread.isInitialized) thread.interrupt()
