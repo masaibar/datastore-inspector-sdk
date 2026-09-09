@@ -36,6 +36,9 @@ import java.io.Closeable
 import java.io.DataInputStream
 import java.io.EOFException
 import java.io.File
+import java.io.FilterInputStream
+import java.io.InputStream
+import java.net.SocketTimeoutException
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.UUID
@@ -278,6 +281,8 @@ internal class AuthenticatedLocalServer(
 ) : Closeable {
   private val running = AtomicBoolean(false)
   private val activeClient = AtomicReference<LocalSocket?>(null)
+  private val pendingClient = AtomicReference<LocalSocket?>(null)
+  private val clientLock = Any()
   private val subscriptionGeneration = AtomicLong(0)
   private lateinit var socket: LocalServerSocket
   private lateinit var thread: Thread
@@ -298,8 +303,21 @@ internal class AuthenticatedLocalServer(
         ordinaryFailureOrNull {
           socket.accept()
         } ?: break
-      if (!activeClient.compareAndSet(null, client)) {
-        ordinaryFailureOrNull { client.close() }
+      val occupied = synchronized(clientLock) {
+        if (!running.get()) {
+          ordinaryFailureOrNull { client.close() }
+          return
+        }
+        (!activeClient.compareAndSet(null, client)).also { occupied ->
+          if (occupied) pendingClient.set(client)
+        }
+      }
+      if (occupied) {
+        try {
+          ordinaryFailureOrNull { client.use { serve(it, occupied = true) } }
+        } finally {
+          pendingClient.compareAndSet(client, null)
+        }
         continue
       }
       Thread({
@@ -315,75 +333,21 @@ internal class AuthenticatedLocalServer(
     }
   }
 
-  private fun serve(client: LocalSocket) {
-    client.soTimeout = 5_000
+  private fun serve(client: LocalSocket, occupied: Boolean = false) {
     val input = DataInputStream(client.inputStream)
     val output = client.outputStream
     val outputLock = Any()
     val handshake =
       ordinaryFailureOrNull {
-        readRequest(input, ProtocolLimits.UNAUTHENTICATED_FRAME_BYTES)
+        readHandshakeRequest(input, { client.soTimeout = it })
       } ?: return
-    val hello = handshake.payload as? HandshakeRequest ?: return
-    if (!constantTimeEquals(hello.sessionId, session.sessionId) ||
-      !constantTimeEquals(hello.sessionToken, session.token)
-    ) {
-      writeResponse(
-        output,
-        ResponseEnvelope(
-          handshake.requestId,
-          ErrorResponse(
-            ProtocolErrorCode.AUTH_FAILED,
-            "認証に失敗しました。",
-            false
-          )
-        ),
-        ProtocolLimits.UNAUTHENTICATED_FRAME_BYTES,
-        outputLock
-      )
-      return
-    }
-    val negotiated =
-      ordinaryFailureOrNull {
-        ProtocolNegotiation.negotiate(
-          ProtocolVersion.CURRENT,
-          ProtocolCapabilities.INITIAL,
-          hello.version,
-          hello.capabilities
-        )
-      } ?: run {
-        writeResponse(
-          output,
-          ResponseEnvelope(
-            handshake.requestId,
-            ErrorResponse(
-              ProtocolErrorCode.VERSION_MISMATCH,
-              "Protocol互換性がありません。",
-              false
-            )
-          ),
-          ProtocolLimits.UNAUTHENTICATED_FRAME_BYTES,
-          outputLock
-        )
-        return
-      }
-    writeResponse(
-      output,
-      ResponseEnvelope(
-        handshake.requestId,
-        HandshakeResponse(
-          negotiated.version,
-          negotiated.capabilities,
-          session.sessionId
-        )
-      ),
-      ProtocolLimits.UNAUTHENTICATED_FRAME_BYTES,
-      outputLock
-    )
+    val response = runtimeHandshakeResponse(handshake, session, occupied) ?: return
+    if (!writeResponse(output, response, ProtocolLimits.UNAUTHENTICATED_FRAME_BYTES, outputLock)) return
+    val hello = response.payload as? HandshakeResponse ?: return
     val connectionContext =
       RuntimeConnectionContext(
-        version = negotiated.version,
-        capabilities = negotiated.capabilities.toSet(),
+        version = hello.version,
+        capabilities = hello.negotiatedCapabilities.toSet(),
         sessionId = session.sessionId
       )
     var notificationPublisher: RuntimeNotificationPublisher? = null
@@ -493,20 +457,84 @@ internal class AuthenticatedLocalServer(
     } ?: false
   }
 
-  private fun constantTimeEquals(
-    actual: String,
-    expected: String
-  ): Boolean = MessageDigest.isEqual(actual.encodeToByteArray(), expected.encodeToByteArray())
-
   override fun close() {
     if (!running.compareAndSet(true, false)) return
-    ordinaryFailureOrNull {
-      activeClient.getAndSet(null)?.close()
-      Unit
+    synchronized(clientLock) {
+      ordinaryFailureOrNull {
+        activeClient.getAndSet(null)?.close()
+        Unit
+      }
+      ordinaryFailureOrNull {
+        pendingClient.getAndSet(null)?.close()
+        Unit
+      }
     }
     ordinaryFailureOrNull { socket.close() }
     if (::thread.isInitialized) thread.interrupt()
   }
+}
+
+internal fun runtimeHandshakeResponse(
+  request: RequestEnvelope,
+  session: RuntimeSession,
+  occupied: Boolean
+): ResponseEnvelope? {
+  val hello = request.payload as? HandshakeRequest ?: return null
+  if (!constantTimeEquals(hello.sessionId, session.sessionId) ||
+    !constantTimeEquals(hello.sessionToken, session.token)
+  ) {
+    return ResponseEnvelope(
+      request.requestId,
+      ErrorResponse(ProtocolErrorCode.AUTH_FAILED, "Runtime authentication failed.", false)
+    )
+  }
+  val negotiated = ordinaryFailureOrNull {
+    ProtocolNegotiation.negotiate(
+      ProtocolVersion.CURRENT,
+      ProtocolCapabilities.INITIAL,
+      hello.version,
+      hello.capabilities
+    )
+  } ?: return ResponseEnvelope(
+    request.requestId,
+    ErrorResponse(ProtocolErrorCode.VERSION_MISMATCH, "Incompatible Protocol version.", false)
+  )
+  return ResponseEnvelope(
+    request.requestId,
+    if (occupied) {
+      ErrorResponse(ProtocolErrorCode.BUSY, "Another inspector is connected to this app.", true)
+    } else {
+      HandshakeResponse(negotiated.version, negotiated.capabilities, session.sessionId)
+    }
+  )
+}
+
+private fun constantTimeEquals(actual: String, expected: String): Boolean =
+  MessageDigest.isEqual(actual.encodeToByteArray(), expected.encodeToByteArray())
+
+internal fun readHandshakeRequest(
+  input: InputStream,
+  setReadTimeout: (Int) -> Unit,
+  nanoTime: () -> Long = System::nanoTime
+): RequestEnvelope {
+  val started = nanoTime()
+  fun applyRemainingTimeout() {
+    val remainingNanos = 5_000_000_000L - (nanoTime() - started)
+    if (remainingNanos <= 0) throw SocketTimeoutException("Runtime handshake timed out.")
+    setReadTimeout(((remainingNanos + 999_999L) / 1_000_000L).toInt())
+  }
+  val boundedInput = object : FilterInputStream(input) {
+    override fun read(): Int {
+      applyRemainingTimeout()
+      return input.read()
+    }
+
+    override fun read(bytes: ByteArray, offset: Int, length: Int): Int {
+      applyRemainingTimeout()
+      return input.read(bytes, offset, length)
+    }
+  }
+  return readRequest(DataInputStream(boundedInput), ProtocolLimits.UNAUTHENTICATED_FRAME_BYTES)
 }
 
 internal fun dispatchAuthenticatedRequest(

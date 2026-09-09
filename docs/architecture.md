@@ -45,6 +45,7 @@ Preset、MCPポリシーも含みません。
 - API 28未満ではProviderがno-opとなり、セッションmetadata、socket、threadを作りません。
   Runtime AARのmanifest `minSdk`は23のままです。
 - 接続ごとにランダムなprivate session tokenで認証します。
+- 同じRuntimeへの接続は先着1クライアントです。後続クライアントには認証とProtocol互換性を確認した後、ハンドシェイク応答としてretryableな`BUSY`を返して閉じます。既存接続は維持し、強制引き継ぎは行いません。ハンドシェイク全体の待機期限は5秒で、後続の受付中socketもRuntime停止時に閉じます。
 - ADBはホストのloopback portをabstract local socketへ転送します。
 - Preferencesの変更には`DataStore.edit`を使います。
 - SharedPreferencesは永続化済みのcredential-protectedファイルだけをカタログへ登録し、
