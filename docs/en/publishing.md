@@ -111,10 +111,12 @@ shasum -a 256 -c \
 
 ## Branch workflow
 
-- At the start of a release cycle, create `release/<version>` from the latest public `main`.
+- [Must] At the start of a release cycle, create `release/<version>` from the latest public `main`. Before its first push, set `version` in `gradle/artifact-coordinates.properties` to the unpublished, non-SNAPSHOT SemVer matching `<version>` in the branch name and include this update in the branch's initialization commit. Branch individual features and fixes from that commit so development and validation use the intended release version from the start.
+- [Never] Open a separate pull request solely for this initial version update. Directly committing it is an exception for release branch initialization; ordinary features and fixes still require pull request review.
+- [Must] Run [local verification](#local-verification) with the initialized version and include the initialization commit in the final release pull request's review scope. Omitting a separate pull request does not waive version validation or review.
 - Target every feature or fix pull request for that version at `release/<version>`, and merge it only
   after CI and review succeed. Individual pull requests may use squash merge.
-- Keep exactly one pull request from `release/<version>` to public `main`, titled `[release-pr] Release <version>`, and update its included-change list as individual pull requests merge. This marker prevents CodeRabbit from reviewing the same changes again after they were reviewed before entering the release branch.
+- [Must] Push the initialization commit to `release/<version>`, verify that the remote head matches local HEAD, then create exactly one Draft pull request targeting public `main` with the title `Release <version>`. For example, `release/1.2.1` uses `version=1.2.1` and the title `Release 1.2.1`. Treat initialization and creation of the release pull request as one operation, and update its included-change list as individual pull requests merge. Mark it ready for review when release preparation is complete.
 - Merge the final release pull request with GitHub's `Create a merge commit`. Do not use `Squash and
   merge` or `Rebase and merge`: they do not preserve the release branch pull-request commits as
   ancestors of `main`, so generated release notes can omit the actual change pull requests.
@@ -124,8 +126,7 @@ shasum -a 256 -c \
 
 ## Release procedure
 
-1. On a `release/<version>` branch, change `version` in `gradle/artifact-coordinates.properties` to
-   an unpublished value that does not end in `-SNAPSHOT`.
+1. Use a release branch initialized and validated according to the [branch workflow](#branch-workflow).
 2. Merge individual pull requests into `release/<version>`, then inspect CI, publication metadata,
    and the included-change list in the final pull request to public `main`. For a non-SNAPSHOT release
    candidate, optionally provide valid Plugin Portal credentials through environment variables and

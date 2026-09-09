@@ -89,4 +89,4 @@ JAVA_HOME="/path/to/jdk-17" ./gradlew -p gradle/publication-consumer clean verif
 - [What the Gradle Plugin changes](docs/what-is-injected.md): debug への注入内容と release 非混入条件。
 - [Security](docs/security.md): transport、mutation、release isolation の trust boundary。
 - [Privacy](docs/privacy.md): 端末データ、log、telemetry に関する制約。
-- [Publication](docs/publishing.md): public repository初期化、公開metadata、credential、release手順。
+- [Must] release branchの作成・公開時は[Publication](docs/publishing.md)のbranch運用とrelease手順に従う。version初期化と公開前検証を漏らさないためです。
