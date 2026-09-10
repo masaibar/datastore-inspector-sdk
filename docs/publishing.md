@@ -130,6 +130,6 @@ shasum -a 256 -c \
 
 `Release SDK`から`Publish SDK`をreusable workflowとして直接呼び出す。`GITHUB_TOKEN`で作ったtag／GitHub Releaseのeventに別workflowの起動を依存させない。tag作成はPR eventのbranch情報とmerge commitを使い、merge commit messageは解析しない。
 
-初回導入時など、version更新が既に`main`へmerge済みでrelease PRが存在しない場合は、GitHub Actionsの`Publish SDK`をpublic `main`から手動実行し、`version`とtarget `all`を指定できる。指定tagがなければ、workflowを実行した`main` commitへannotated tagとGitHub Releaseを作成する。既存tagがあればそのimmutable commitを再利用するため、`main`が先へ進んだ後の部分再試行でも公開sourceは変わらない。Maven Centralはvalidation完了まで待って自動releaseし、その後Gradle Plugin Portalへpublishする。
+初回導入時など、version更新が既に`main`へmerge済みでrelease PRが存在しない場合は、GitHub Actionsの`Publish SDK`をpublic `main`から手動実行し、`version`とtarget `all`を指定できる。指定tagがなければ、workflowを実行した`main` commitへannotated tagとGitHub Releaseを作成する。既存tagがあればそのimmutable commitを再利用するため、`main`が先へ進んだ後の部分再試行でも公開sourceは変わらない。target `all`では、先にPlugin Portalのmetadataを検証し、Maven Centralのvalidationと自動releaseの完了後にGradle Plugin Portalへpublishする。
 
 片方だけが失敗した場合は、両公開先の状態を確認し、成功済みtargetへ同じversionを再publishしない。自動run全体を再実行せず、`Publish SDK`をpublic `main`から同じ`version`、target `maven-central`または`plugin-portal`で手動実行して未公開側だけを再試行する。公開済みartifactは不変なので、内容を直す場合は新しいversionを使う。
