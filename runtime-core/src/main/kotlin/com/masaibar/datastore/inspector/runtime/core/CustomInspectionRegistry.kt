@@ -354,7 +354,7 @@ internal class CustomInspectionExecutor(
         transient = cancellation.cancelledWhileQueued
       )
     } catch (error: ExecutionException) {
-      val cause = error.cause
+      val cause = error.unwrapExecutionCause()
       when (val controlFlow = cause.findInspectionControlFlow()) {
         is CancellationException -> {
           val operationStarted = handle.finishInspectionOperation()
@@ -453,6 +453,18 @@ internal class CustomInspectionExecutor(
     RUNNING,
     CANCELLED
   }
+}
+
+private fun ExecutionException.unwrapExecutionCause(): Throwable? {
+  var current = cause
+  val visited =
+    java.util.Collections.newSetFromMap(
+      IdentityHashMap<Throwable, Boolean>()
+    )
+  while (current is ExecutionException && visited.add(current)) {
+    current = current.cause
+  }
+  return current
 }
 
 private fun Throwable?.containsCustomActualWriteFailure(): Boolean {

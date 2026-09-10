@@ -25,6 +25,7 @@ import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutionException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -570,6 +571,46 @@ class CustomInspectionExecutorSpec :
             CustomStoreReasonCode.CUSTOM_VALUE_ROUND_TRIP_MISMATCH
           failure.operationStarted shouldBe false
           handle.unavailableReason() shouldBe null
+        }
+      }
+
+      listOf(
+        "directly" to { failure: CustomInspectionFailure -> failure },
+        "through a nested ExecutionException" to { failure: CustomInspectionFailure ->
+          ExecutionException(failure)
+        }
+      ).forEach { (delivery, wrap) ->
+        context("a worker returns CustomInspectionFailure $delivery") {
+          lateinit var executor: CustomInspectionExecutor
+          lateinit var handle: CustomInspectionHandle<String>
+
+          beforeEach {
+            executor = CustomInspectionExecutor(workerCount = 1, queueCapacity = 1)
+            handle = newHandle()
+          }
+
+          afterEach {
+            executor.close()
+            handle.close()
+          }
+
+          it("preserves the exact failure across Future boundaries") {
+            val expected =
+              CustomInspectionFailure(
+                CustomStoreReasonCode.CUSTOM_TEXT_UNSAFE
+              )
+            val caught =
+              shouldThrow<CustomInspectionFailure> {
+                executor.execute(handle) {
+                  throw wrap(expected)
+                }
+              }
+
+            (caught === expected) shouldBe true
+            caught.reason shouldBe CustomStoreReasonCode.CUSTOM_TEXT_UNSAFE
+            caught.operationStarted shouldBe false
+            handle.unavailableReason() shouldBe null
+          }
         }
       }
 
