@@ -106,10 +106,12 @@ shasum -a 256 -c \
 
 ## branch運用
 
-- release cycleの開始時に、最新のpublic `main`から`release/<version>` branchを作成する。
+- [Must] release cycleの開始時に、最新のpublic `main`から`release/<version>` branchを作成し、最初のpush前に`gradle/artifact-coordinates.properties`の`version`をbranch名の`<version>`と一致する未公開・非SNAPSHOTのSemVerへ更新して、そのbranchの初期コミットに含める。個別のfeature／fix branchはこのコミットから派生させ、開発・検証を最初から公開予定のversionで揃える。
+- [Never] branch作成時のversion更新だけを別の個別PRに分けない。これはrelease branchの初期化として直接コミットする例外であり、通常のfeature／fixは引き続きPRでreviewする。
+- [Must] 初期化したversionで[ローカル検証](#ローカル検証)を実行し、初期コミットも最終release PRの確認対象に含める。個別PRの省略によってversion変更の検証・確認を省かない。
 - そのversionへ含めるfeature／fix PRは`release/<version>`をbaseにし、CIとreviewを完了してからmergeする。
   個別PRはsquash mergeしてよい。
-- `release/<version>`からpublic `main`へのPRは`[release-pr] Release <version>`というtitleで1件だけ作成し、個別PRのmergeに合わせて「含まれる変更」を更新する。このmarkerにより、release branchへ入る前にreview済みの同じ差分をCodeRabbitで再reviewしない。
+- [Must] 初期コミットを`release/<version>`へpushし、remote headとlocal HEADの一致を確認したら、public `main`向けのDraft PRを`Release <version>`というtitleで1件だけ作成する。たとえば`release/1.2.1`は`version=1.2.1`とし、titleを`Release 1.2.1`にする。初期化から集約PR作成までを一続きの作業にし、個別PRのmergeに合わせて「含まれる変更」を更新する。公開準備が整った時点でReadyへ変更する。
 - 最終release PRはGitHubの`Create a merge commit`でmergeする。`Squash and merge`または`Rebase and merge`を
   使用するとrelease branch内のPR commitをmainの祖先として保持できず、自動生成Release Notesから実際の
   変更PRが欠落し得るため使用しない。
@@ -118,29 +120,16 @@ shasum -a 256 -c \
 
 ## release手順
 
-1. `release/<version>` branchで`gradle/artifact-coordinates.properties`の`version`を、未公開かつ
-   `-SNAPSHOT`でない値へ更新する。
-2. 個別PRを`release/<version>`へmergeし、public `main`向けの最終release PRでCI、公開metadata、「含まれる変更」
-   を確認する。非SNAPSHOTのrelease候補では、必要に応じて有効なPlugin Portal credentialを環境変数へ設定して
-   `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`も実行する。
-3. 最終release PRをGitHubの`Create a merge commit`でpublic `main`へmergeする。`Create SDK Release` workflowが
-   PR eventのbranch情報とmerge commitを検証し、`v<version>`のannotated tagとGitHub Releaseを自動作成する。
-4. GitHub Releaseの「What's Changed」に、前回version以降の個別feature／fix PRが列挙され、最終release PRだけに
-   畳まれていないことを確認する。
-5. GitHub Actionsの`Publish SDK`をpublic `main`から手動実行し、正本と同じ`version`、target `all`を指定する。
-   workflowは公開対象を`v<version>` tagへcheckoutしてからrelease gateとpublishを行う。
-6. Maven CentralとGradle Plugin Portalで同じversionの公開を確認する。
+1. [branch運用](#branch運用)に従って初期化・検証済みのrelease branchを使う。
+2. 個別PRを`release/<version>`へmergeし、public `main`向けの最終release PRでCI、公開metadata、「含まれる変更」を確認する。非SNAPSHOTのrelease候補では、必要に応じて有効なPlugin Portal credentialを環境変数へ設定して`./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`も実行する。
+3. [Must] 最終release PRのmergeをMaven Central／Gradle Plugin Portalへの公開承認として扱い、公開準備が整ってからGitHubの`Create a merge commit`でpublic `main`へmergeする。`Release SDK` workflowが`v<version>`のannotated tagとGitHub Releaseを作成し、同じrun内で`Publish SDK`を呼び出してrelease gateと両公開先へのpublishを自動実行する。通常releaseの手動dispatchは不要とし、二重公開を避ける。
+4. GitHub Releaseの「What's Changed」に、前回version以降の個別feature／fix PRが列挙され、最終release PRだけに畳まれていないことを確認する。
+5. `Release SDK`の公開jobの成功と、Maven Central／Gradle Plugin Portalの両方で同じversionが公開されたことを確認する。GitHub Releaseの作成だけではSDK公開完了としない。
 
-自動releaseは、同じrepositoryの`release/<SemVer>` branchからpublic `main`へmergeされたPRだけを対象にする。
-tagとGitHub Releaseの作成自体はmerge commit messageを解析しない。一方、自動生成Release Notesへ個別PRを残す
-ため、branch運用では最終release PRのmerge methodを`Create a merge commit`に固定する。入力versionと正本、
-非SNAPSHOT、tagとcommitの一致を検証し、既存tagが別commitを指す場合は上書きせず失敗する。
+自動公開は、同じrepositoryの`release/<SemVer>` branchからpublic `main`へmergeされたPRだけを対象にする。branch名と正本のversion、非SNAPSHOT、tagとmerge commitの一致を検証し、既存tagが別commitを指す場合は上書きせず失敗する。公開jobは準備段階で確定したcommit SHAをcheckoutし、tagとの一致を再検証してから既存のrelease gateを実行する。`sdk-publication` environmentのsecretと保護設定は自動実行にも適用する。
 
-初回導入時など、version更新が既に`main`へmerge済みでrelease PRが存在しない場合は、`Publish SDK`を直接実行
-できる。指定tagがなければ、workflowを実行した`main` commitへannotated tagとGitHub Releaseを自動作成する。
-既存tagがあればそのimmutable commitを再利用するため、`main`が先へ進んだ後の部分再試行でも公開sourceは
-変わらない。Maven Centralはvalidation完了まで待って自動releaseし、その後Gradle Plugin Portalへpublishする。
+`Release SDK`から`Publish SDK`をreusable workflowとして直接呼び出す。`GITHUB_TOKEN`で作ったtag／GitHub Releaseのeventに別workflowの起動を依存させない。tag作成はPR eventのbranch情報とmerge commitを使い、merge commit messageは解析しない。
 
-片方だけが失敗した場合は、成功済みtargetへ同じversionを再publishしない。workflowのtargetを
-`maven-central`または`plugin-portal`へ絞り、同じtagを入力して失敗側だけを再試行する。公開済みartifactは
-不変なので、内容を直す場合は新しいversionを使う。
+初回導入時など、version更新が既に`main`へmerge済みでrelease PRが存在しない場合は、GitHub Actionsの`Publish SDK`をpublic `main`から手動実行し、`version`とtarget `all`を指定できる。指定tagがなければ、workflowを実行した`main` commitへannotated tagとGitHub Releaseを作成する。既存tagがあればそのimmutable commitを再利用するため、`main`が先へ進んだ後の部分再試行でも公開sourceは変わらない。target `all`では、先にPlugin Portalのmetadataを検証し、Maven Centralのvalidationと自動releaseの完了後にGradle Plugin Portalへpublishする。
+
+片方だけが失敗した場合は、両公開先の状態を確認し、成功済みtargetへ同じversionを再publishしない。自動run全体を再実行せず、`Publish SDK`をpublic `main`から同じ`version`、target `maven-central`または`plugin-portal`で手動実行して未公開側だけを再試行する。公開済みartifactは不変なので、内容を直す場合は新しいversionを使う。
