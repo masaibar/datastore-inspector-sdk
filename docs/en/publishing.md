@@ -127,32 +127,15 @@ shasum -a 256 -c \
 ## Release procedure
 
 1. Use a release branch initialized and validated according to the [branch workflow](#branch-workflow).
-2. Merge individual pull requests into `release/<version>`, then inspect CI, publication metadata,
-   and the included-change list in the final pull request to public `main`. For a non-SNAPSHOT release
-   candidate, optionally provide valid Plugin Portal credentials through environment variables and
-   run `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`.
-3. Merge the final release pull request into public `main` with GitHub's `Create a merge commit`. The
-   `Create SDK Release` workflow validates the pull request branch metadata and merge commit, then
-   creates an annotated `v<version>` tag and a GitHub Release.
-4. Confirm that the GitHub Release's What's Changed section lists the individual feature and fix pull
-   requests since the previous version instead of collapsing them into the final release pull request.
-5. Manually run `Publish SDK` from public `main`, using the same `version` and target `all`. The
-   workflow checks out `v<version>` before running the release gates and publishing.
-6. Confirm that the same version is available from Maven Central and the Gradle Plugin Portal.
+2. Merge individual pull requests into `release/<version>`, then inspect CI, publication metadata, and the included-change list in the final pull request to public `main`. For a non-SNAPSHOT release candidate, optionally provide valid Plugin Portal credentials through environment variables and run `./gradle-plugin/gradlew -p gradle-plugin publishPlugins --validate-only --console=plain`.
+3. [Must] Treat merging the final release pull request as approval to publish to Maven Central and the Gradle Plugin Portal. Once publication is ready, merge it into public `main` with GitHub's `Create a merge commit`. The `Release SDK` workflow creates an annotated `v<version>` tag and a GitHub Release, then calls `Publish SDK` within the same run to execute the release gates and publish to both destinations automatically. Do not manually dispatch a normal release, to avoid duplicate publication.
+4. Confirm that the GitHub Release's What's Changed section lists the individual feature and fix pull requests since the previous version instead of collapsing them into the final release pull request.
+5. Confirm that the publication job in `Release SDK` succeeds and that the same version is available from both Maven Central and the Gradle Plugin Portal. Creating the GitHub Release alone does not complete SDK publication.
 
-Automatic releases apply only to merged pull requests from a `release/<SemVer>` branch in the same
-repository to public `main`. Tag and GitHub Release creation uses pull request event metadata instead
-of parsing the merge commit message. The branch workflow still requires `Create a merge commit` so
-generated release notes retain the individual pull requests. The workflow verifies the input against
-the source-of-truth version, rejects SNAPSHOT versions, and refuses to move an existing tag that
-points to another commit.
+Automatic publication applies only to merged pull requests from a `release/<SemVer>` branch in the same repository to public `main`. The workflow validates the branch version against the source of truth, rejects SNAPSHOT versions, checks that the tag matches the merge commit, and refuses to move an existing tag to another commit. The publication job checks out the commit SHA fixed during preparation and verifies it against the tag before running the existing release gates. The secrets and protection rules of the `sdk-publication` environment also apply to automatic runs.
 
-For a bootstrap release where the version has already reached `main` without a release pull request,
-run `Publish SDK` directly. If the requested tag is absent, the workflow creates an annotated tag and
-a GitHub Release for the selected `main` commit. If the tag already exists, the workflow reuses that
-immutable commit, so a partial retry continues to publish the same source even after `main` advances.
-Maven Central is validated and released first, followed by the Gradle Plugin Portal.
+`Release SDK` calls `Publish SDK` directly as a reusable workflow. It does not rely on events from a tag or GitHub Release created with `GITHUB_TOKEN` to start another workflow. Tag creation uses the branch and merge commit from pull request event metadata rather than parsing the merge commit message.
 
-If only one target fails, do not republish the same version to the successful target. Rerun the
-workflow with the same tag input and target `maven-central` or `plugin-portal` for only the failed side.
-Published artifacts are immutable; use a new version if their contents must change.
+For a bootstrap release where the version has already reached `main` without a release pull request, manually run `Publish SDK` from public `main` with the requested `version` and target `all`. If the requested tag is absent, the workflow creates an annotated tag and a GitHub Release for the selected `main` commit. If the tag already exists, the workflow reuses that immutable commit, so a partial retry continues to publish the same source even after `main` advances. For target `all`, Plugin Portal metadata is validated first, then Maven Central validation and release complete, and finally the Gradle Plugin is published to the Plugin Portal.
+
+If only one target fails, check both destinations and do not republish the same version to the successful target. Instead of rerunning the entire automatic run, manually dispatch `Publish SDK` from public `main` with the same `version` and target `maven-central` or `plugin-portal` for only the unpublished side. Published artifacts are immutable; use a new version if their contents must change.

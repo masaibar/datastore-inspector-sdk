@@ -1,4 +1,4 @@
-name: Create SDK Release
+name: Release SDK
 
 on:
   pull_request:
@@ -25,12 +25,15 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
           fetch-depth: 0
-      - name: release branchからtagとGitHub Releaseを作成
+      - name: Create the release tag and GitHub Release
+        id: release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -39,10 +42,22 @@ jobs:
         run: |
           release_version="${RELEASE_BRANCH#release/}"
           if [[ "$RELEASE_BRANCH" != "release/${release_version}" ]]; then
-            echo "release branchはrelease/<version>形式で指定してください。" >&2
+            echo "The release branch must use release/<version>." >&2
             exit 1
           fi
           ./scripts/ensure-github-release.sh \
             --version "$release_version" \
             --commit "$RELEASE_COMMIT" \
             --repository "$GITHUB_REPOSITORY"
+          printf 'version=%s\n' "$release_version" >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish SDK artifacts
+    needs: release
+    permissions:
+      contents: write
+    uses: ./.github/workflows/publish.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
+      release-commit: ${{ github.event.pull_request.merge_commit_sha }}
+      target: all

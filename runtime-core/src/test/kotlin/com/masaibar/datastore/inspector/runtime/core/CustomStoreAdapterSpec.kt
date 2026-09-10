@@ -452,7 +452,7 @@ class CustomStoreAdapterSpec :
     }
 
     describe("fallback codec") {
-      context("binary Serializerに一致するcodec providerがないとき") {
+      context("a binary Serializer has no matching codec provider") {
         lateinit var harness: BinaryStoreHarness
 
         beforeEach {
@@ -465,15 +465,17 @@ class CustomStoreAdapterSpec :
           InspectorCustomCodecRegistry.clear()
         }
 
-        it("raw bytesを公開せず理由付きUnsupportedへfail closedする") {
+        it("fails closed as Unsupported with a reason without exposing raw bytes") {
           val failure =
             shouldThrow<StoreSnapshotUnsupportedException> {
               harness.adapter.snapshot()
             }
 
           failure.reason.code shouldBe
-            CustomStoreReasonCode.CUSTOM_VALUE_ROUND_TRIP_MISMATCH.wireName
-          harness.adapter.runtimeUnsupportedReason?.code shouldBe failure.reason.code
+            CustomStoreReasonCode.CUSTOM_TEXT_UNSAFE.wireName
+          failure.reason.safeMessage shouldBe "Custom DataStoreを安全に投影できません。"
+          failure.reason.retryable shouldBe false
+          harness.adapter.runtimeUnsupportedReason shouldBe failure.reason
         }
       }
 
