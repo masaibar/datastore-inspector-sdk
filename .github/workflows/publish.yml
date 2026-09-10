@@ -1,14 +1,28 @@
 name: Publish SDK
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       version:
-        description: gradle/artifact-coordinates.propertiesと一致するrelease version
+        description: Release version matching the artifact coordinates
+        required: true
+        type: string
+      release-commit:
+        description: Exact merge commit to publish
         required: true
         type: string
       target:
-        description: 初回または通常releaseはall、部分失敗の再試行時だけ個別targetを選択
+        description: Publication destination
+        default: all
+        type: string
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release version matching gradle/artifact-coordinates.properties
+        required: true
+        type: string
+      target:
+        description: Use a single target to retry a partial failure; all publishes both targets
         required: true
         default: all
         type: choice
@@ -31,24 +45,33 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
+    outputs:
+      commit: ${{ steps.release.outputs.commit }}
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.release-commit || github.sha }}
           fetch-depth: 0
-      - name: release tagとGitHub Releaseを準備
+      - name: Prepare the release tag and GitHub Release
+        id: release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           REQUESTED_VERSION: ${{ inputs.version }}
+          RELEASE_COMMIT: ${{ inputs.release-commit }}
+          PUBLICATION_TARGET: ${{ inputs.target }}
         run: |
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "Publication workflowはpublic mainからだけ実行できます。" >&2
+            echo "Publication must run from public main." >&2
             exit 1
           fi
+          case "$PUBLICATION_TARGET" in
+            all | maven-central | plugin-portal) ;;
+            *) echo "Unknown publication target: $PUBLICATION_TARGET" >&2; exit 1 ;;
+          esac
           expected_tag="v${REQUESTED_VERSION}"
-          release_commit="$GITHUB_SHA"
-          if git show-ref --verify --quiet "refs/tags/${expected_tag}"; then
+          release_commit="${RELEASE_COMMIT:-$GITHUB_SHA}"
+          if [[ -z "$RELEASE_COMMIT" ]] && git show-ref --verify --quiet "refs/tags/${expected_tag}"; then
             release_commit="$(git rev-list -n 1 "$expected_tag")"
             git checkout --detach "$release_commit"
           fi
@@ -56,6 +79,7 @@ jobs:
             --version "$REQUESTED_VERSION" \
             --commit "$release_commit" \
             --repository "$GITHUB_REPOSITORY"
+          printf 'commit=%s\n' "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   publish:
     name: Publish ${{ inputs.version }}
@@ -68,36 +92,36 @@ jobs:
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
-          ref: v${{ inputs.version }}
+          ref: ${{ needs.prepare-release.outputs.commit }}
           fetch-depth: 0
           persist-credentials: false
-      - name: versionとtagの一致を再検証
+      - name: Verify the release version and tag
         shell: bash
         env:
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           expected_tag="v${REQUESTED_VERSION}"
           if [[ "$GITHUB_REF" != "refs/heads/main" ]]; then
-            echo "Publication workflowはpublic mainからだけ実行できます。" >&2
+            echo "Publication must run from public main." >&2
             exit 1
           fi
           configured_version="$(sed -n 's/^version=//p' gradle/artifact-coordinates.properties)"
           if [[ "$configured_version" != "$REQUESTED_VERSION" ]]; then
-            echo "入力versionとartifact座標の正本が一致しません。" >&2
+            echo "The requested version does not match the artifact coordinates." >&2
             exit 1
           fi
           if [[ "$configured_version" == *-SNAPSHOT ]]; then
-            echo "SNAPSHOT versionはrelease workflowから公開できません。" >&2
+            echo "SNAPSHOT versions cannot be published by the release workflow." >&2
             exit 1
           fi
           if [[ ! "$configured_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "release versionはSemVer形式で指定してください。" >&2
+            echo "The release version must use SemVer." >&2
             exit 1
           fi
           tag_commit="$(git rev-list -n 1 "$expected_tag")"
           checked_out_commit="$(git rev-parse HEAD)"
           if [[ "$tag_commit" != "$checked_out_commit" ]]; then
-            echo "選択したtagとcheckout commitが一致しません。" >&2
+            echo "The release tag does not match the checked out commit." >&2
             exit 1
           fi
       - name: 公開予定treeの境界を検証
