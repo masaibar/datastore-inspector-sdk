@@ -473,7 +473,9 @@ class CustomStoreAdapterSpec :
 
           failure.reason.code shouldBe
             CustomStoreReasonCode.CUSTOM_TEXT_UNSAFE.wireName
-          harness.adapter.runtimeUnsupportedReason?.code shouldBe failure.reason.code
+          failure.reason.safeMessage shouldBe "Custom DataStoreを安全に投影できません。"
+          failure.reason.retryable shouldBe false
+          harness.adapter.runtimeUnsupportedReason shouldBe failure.reason
         }
       }
 

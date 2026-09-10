@@ -455,6 +455,7 @@ internal class CustomInspectionExecutor(
   }
 }
 
+/** Coroutine stack-trace recovery can add an extra wrapper around Future failures. */
 private fun ExecutionException.unwrapExecutionCause(): Throwable? {
   var current = cause
   val visited =
