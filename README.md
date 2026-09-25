@@ -70,7 +70,7 @@ Apply the Plugin only to the Android application module. It automatically adds t
 
 Supported Proto2 and Proto3 Java Lite DataStore instances need no schema registration; applying the Plugin is enough.
 
-Build and run a debuggable variant, then select the application in DataStore Inspector. See [`sample-app`](sample-app) for an executable example.
+Build and run a debuggable variant, then select the application in DataStore Inspector. See [`sample-app`](sample-app) for an executable example. Its showcase section repaints the screen from the `showcase_settings` Preferences DataStore, so an edit made in DataStore Inspector is visible in the app immediately.
 
 See the [support scope](docs/en/compatibility.md) for supported configurations, limitations, and the explicit `schemaEntry` mapping.
 

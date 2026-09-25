@@ -70,7 +70,7 @@ PluginはAndroid application moduleだけへ適用してください。必要な
 
 対応するProto2／Proto3 Java Lite DataStoreはschema登録不要で、Pluginを適用するだけです。
 
-debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorからapplicationを選びます。実行例は[`sample-app`](sample-app)を参照してください。
+debuggable variantをbuild・起動し、Android StudioのDataStore Inspectorからapplicationを選びます。実行例は[`sample-app`](sample-app)を参照してください。showcaseセクションは`showcase_settings` Preferences DataStoreの値で画面を描き直すため、DataStore Inspectorで編集した結果がアプリ側に即座に表示されます。
 
 対応構成、制限、`schemaEntry`による明示mappingは[対応範囲](docs/compatibility.md)を参照してください。
 

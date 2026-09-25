@@ -3,9 +3,12 @@ package com.masaibar.datastore.inspector.sample
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
@@ -24,13 +27,14 @@ internal fun SampleScreen(
   uiState: SampleUiState,
   onAction: (SampleViewModel.Action) -> Unit
 ) {
-  MaterialTheme {
+  MaterialTheme(colorScheme = uiState.showcase.colorScheme()) {
     Surface(modifier = Modifier.fillMaxSize()) {
       Column(
         modifier =
           Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {
@@ -43,6 +47,16 @@ internal fun SampleScreen(
             "Run this debuggable app, then open DataStore Inspector in Android Studio. " +
               "The SDK is injected only into debuggable variants.",
           style = MaterialTheme.typography.bodyMedium
+        )
+
+        ShowcaseSection(
+          settings = uiState.showcase,
+          onAction = onAction
+        )
+
+        Text(
+          text = "All value types",
+          style = MaterialTheme.typography.titleLarge
         )
 
         ValueSection("Preferences DataStore", uiState.preferencesValues)
