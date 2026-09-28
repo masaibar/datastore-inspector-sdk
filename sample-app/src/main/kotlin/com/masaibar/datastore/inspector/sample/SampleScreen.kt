@@ -33,8 +33,8 @@ internal fun SampleScreen(
         modifier =
           Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
             .windowInsetsPadding(WindowInsets.safeDrawing)
+            .verticalScroll(rememberScrollState())
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
       ) {

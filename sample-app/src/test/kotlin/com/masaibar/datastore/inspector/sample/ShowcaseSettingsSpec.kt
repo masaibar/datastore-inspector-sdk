@@ -1,9 +1,31 @@
 package com.masaibar.datastore.inspector.sample
 
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.preferencesOf
+import com.masaibar.datastore.inspector.sample.ShowcaseStore.retryOnReadFailure
+import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.DescribeSpec
+import io.kotest.engine.spec.tempdir
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.types.shouldBeSameInstanceAs
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.withTimeout
+import java.io.File
+import java.io.IOException
 
 class ShowcaseSettingsSpec :
   DescribeSpec({
@@ -44,6 +66,74 @@ class ShowcaseSettingsSpec :
 
           preferences.toShowcaseSettings() shouldBe
             ShowcaseSettings(theme = ShowcaseTheme.LIGHT, accent = ShowcaseAccent.ORANGE)
+        }
+      }
+    }
+
+    describe("ShowcaseStore.corruptionHandler") {
+      context("when the stored file cannot be parsed") {
+        it("reads the defaults and keeps accepting later edits") {
+          val file = File(tempdir(), "showcase_settings.preferences_pb")
+          file.writeBytes(byteArrayOf(0x7f, 0x00, 0x13, 0x37))
+          val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+          try {
+            val dataStore =
+              PreferenceDataStoreFactory.create(
+                corruptionHandler = ShowcaseStore.corruptionHandler,
+                scope = scope,
+                produceFile = { file }
+              )
+
+            dataStore.data.first().toShowcaseSettings() shouldBe ShowcaseSettings()
+
+            dataStore.edit { preferences -> preferences[ShowcaseKeys.THEME] = "dark" }
+            dataStore.data.first().toShowcaseSettings().theme shouldBe ShowcaseTheme.DARK
+          } finally {
+            scope.cancel()
+          }
+        }
+      }
+    }
+
+    describe("ShowcaseStore.retryOnReadFailure") {
+      context("when the first read fails with an IOException") {
+        it("shows the defaults, reads again, and keeps following later edits") {
+          val stored = MutableStateFlow(preferencesOf(ShowcaseKeys.THEME to "dark"))
+          var readAttempts = 0
+          val data =
+            flow {
+              readAttempts += 1
+              if (readAttempts == 1) throw IOException("temporary read failure")
+              emitAll(stored)
+            }
+
+          val themes =
+            withTimeout(5_000) {
+              data
+                .retryOnReadFailure(retryDelayMillis = 1)
+                .map { preferences -> preferences.toShowcaseSettings().theme }
+                .onEach { theme ->
+                  if (theme == ShowcaseTheme.DARK) {
+                    stored.value = preferencesOf(ShowcaseKeys.THEME to "light")
+                  }
+                }
+                .take(3)
+                .toList()
+            }
+
+          themes shouldBe listOf(ShowcaseTheme.LIGHT, ShowcaseTheme.DARK, ShowcaseTheme.LIGHT)
+          readAttempts shouldBe 2
+        }
+      }
+
+      context("when the read fails with something other than an IOException") {
+        it("rethrows the failure instead of retrying") {
+          val failure = IllegalStateException("not a read failure")
+          val data = flow<Preferences> { throw failure }
+
+          shouldThrow<IllegalStateException> {
+            data.retryOnReadFailure(retryDelayMillis = 1).first()
+          } shouldBeSameInstanceAs failure
         }
       }
     }
