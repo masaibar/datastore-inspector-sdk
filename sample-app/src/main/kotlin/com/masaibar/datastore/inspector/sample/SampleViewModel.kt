@@ -32,6 +32,18 @@ internal class SampleViewModel(
     data object UpdateProto : Action {
       override val label: String = "Update Proto"
     }
+
+    data class SetShowcaseTheme(val theme: ShowcaseTheme) : Action {
+      override val label: String = "Set showcase theme"
+    }
+
+    data class SetShowcaseAccent(val accent: ShowcaseAccent) : Action {
+      override val label: String = "Set showcase accent"
+    }
+
+    data class SetShowcaseOnboardingDone(val done: Boolean) : Action {
+      override val label: String = "Set showcase onboarding"
+    }
   }
 
   private data class OperationState(
@@ -63,6 +75,9 @@ internal class SampleViewModel(
     }
 
   init {
+    viewModelScope.launch {
+      runCatching { ShowcaseStore.recordLaunch(getApplication()) }
+    }
     viewModelScope.launch {
       sharedPreferencesValues.value =
         runCatching {
@@ -98,9 +113,11 @@ internal class SampleViewModel(
     combine(
       currentValues,
       operationState,
-      sharedPreferencesValues
-    ) { values, operation, sharedPreferences ->
+      sharedPreferencesValues,
+      ShowcaseStore.settings(application)
+    ) { values, operation, sharedPreferences, showcase ->
       SampleUiState(
+        showcase = showcase,
         preferencesValues = values.preferencesSummary(),
         sharedPreferencesValues = sharedPreferences,
         protoValues = values.proto.summary(),
@@ -114,9 +131,19 @@ internal class SampleViewModel(
     )
 
   fun onAction(action: Action) {
-    if (operationState.value.runningAction != null) return
-
     when (action) {
+      is Action.SetShowcaseTheme -> launchShowcaseWrite {
+        ShowcaseStore.setTheme(getApplication(), action.theme)
+      }
+
+      is Action.SetShowcaseAccent -> launchShowcaseWrite {
+        ShowcaseStore.setAccent(getApplication(), action.accent)
+      }
+
+      is Action.SetShowcaseOnboardingDone -> launchShowcaseWrite {
+        ShowcaseStore.setOnboardingDone(getApplication(), action.done)
+      }
+
       Action.UpdatePreferences -> launchUpdate(action) {
         SampleAppUpdates.writeAllPreferenceTypes(getApplication())
       }
@@ -138,10 +165,19 @@ internal class SampleViewModel(
     super.onCleared()
   }
 
+  /** Showcase writes never block the buttons: the screen re-renders from the DataStore Flow. */
+  private fun launchShowcaseWrite(write: suspend () -> Unit) {
+    viewModelScope.launch {
+      runCatching { write() }
+    }
+  }
+
   private fun launchUpdate(
     action: Action,
     update: suspend () -> Unit
   ) {
+    if (operationState.value.runningAction != null) return
+
     operationState.update { it.copy(runningAction = action) }
     viewModelScope.launch {
       val result = runCatching { update() }
@@ -158,6 +194,7 @@ internal class SampleViewModel(
 }
 
 internal data class SampleUiState(
+  val showcase: ShowcaseSettings,
   val preferencesValues: String,
   val sharedPreferencesValues: String,
   val protoValues: String,
@@ -167,6 +204,7 @@ internal data class SampleUiState(
   companion object {
     fun initialValue(): SampleUiState =
       SampleUiState(
+        showcase = ShowcaseSettings(),
         preferencesValues = "Loading…",
         sharedPreferencesValues = "Loading…",
         protoValues = "Loading…",
