@@ -141,11 +141,12 @@ jobs:
             -PpublicationVersion="$publication_version" \
             --no-configuration-cache \
             --console=plain
-      - name: 検証記録を保存
+      - name: Save verification reports
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: sdk-release-reports
+          retention-days: ${{ job.status == 'failure' && 7 || 3 }}
           path: |
             **/build/reports/
             protocol/build/libs/
@@ -177,11 +178,12 @@ jobs:
           cache-provider: basic
       - name: Gradle Pluginを専用Wrapperで検証
         run: ./gradle-plugin/gradlew -p gradle-plugin clean checkPlugin --console=plain
-      - name: 検証記録を保存
+      - name: Save verification reports
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: gradle-plugin-release-reports
+          retention-days: ${{ job.status == 'failure' && 7 || 3 }}
           path: |
             gradle-plugin/build/reports/
             gradle-plugin/build/libs/
